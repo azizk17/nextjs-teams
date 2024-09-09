@@ -3,6 +3,9 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { getUserTeams } from "@/auth";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Bell, Package2 } from "lucide-react";
+import { ThemeProvider } from "@/components/theme-provider"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,50 +29,60 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const userId = "1";
-  const teams = await getUserTeams(userId);
+  // const teams = await getUserTeams(userId);
+  const teams = []
   const channels: any[] = []
   // const channels = await getUserChannels(teams[0].teamId);
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex h-screen`}
-      >
-        <aside className="w-64 bg-gray-800 text-white p-6">
-          <div className=" flex space-x-4 items-center justify-center mb-4 border-b border-gray-600 pb-4">
-            <Link className="ring-2 ring-gray-400 hover:ring-gray-300 cursor-pointer rounded-md p-2 w-full" href="/">Home</Link>
-            <Link className="ring-2 ring-gray-400 hover:ring-gray-300 cursor-pointer rounded-md p-2 w-full" href="/login">Login</Link>
-          </div>
-          <h1 className="text-2xl font-bold my-2">Teams</h1>
-          {teams.length === 0 && (
-            <div>
-              <h2 className="text-sm mb-2 text-gray-400">No teams found</h2>
-            </div>
-          )}
-          {teams.map((team) => (
-            <div key={team.teamId}>
-              <h2 className="text-lg font-bold mb-2">{team.teamName}</h2>
-            </div>
+    <html lang="en" >
+      <body>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            // enableSystem
+            disableTransitionOnChange
+          >
+        
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+          <div className="hidden border-r border-accent bg-background md:block">
+            <div className="flex h-full max-h-screen flex-col gap-2">
+              <div className="flex h-14 items-center border-b border-muted px-4 lg:h-[60px] lg:px-6">
+                <Link href="/" className="flex items-center gap-2 font-semibold">
+                  <Package2 className="h-6 w-6" />
+                  <span className="">NextJS Teams</span>
+                </Link>
+              </div>
+              <div className="flex-1">
+                <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+                  <Link href="/projects" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+                    Projects
+                  </Link>
+                  <Link href="/teams"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+                    Teams
+                  </Link>
 
-          ))}
-          <nav>
-            <h2 className="text-lg font-bold mb-2">Channels</h2>
-            {channels.length === 0 && (
-              <div>
-                <h2 className="text-sm mb-2 text-gray-400">No channels found</h2>
+
+
+                </nav>
               </div>
-            )}
-            {channels.map((channel) => (
-              <div key={channel.channelId}>
-                <h2 className="text-lg font-bold mb-2">{channel.channelName}</h2>
-                {/* Add channel list here */}
+              <div className="mt-auto p-4">
+                <Button>
+                  Logout
+                </Button>
               </div>
-            ))}
-          </nav>
-        </aside>
-        <main className="flex-1 p-8 overflow-auto">
-          {children}
-        </main>
+
+
+
+            </div>
+            {/* Main content */}
+          </div>
+          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
+            {children}
+          </main>
+        </div>
+        </ThemeProvider>
       </body>
     </html>
   );

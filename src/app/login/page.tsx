@@ -1,4 +1,5 @@
 import { lucia } from "@/auth/lucia-auth"
+import { Button } from "@/components/ui/button"
 import db from "@/db"
 import { usersTable } from "@/db/schema"
 import { eq } from "drizzle-orm"
@@ -62,7 +63,7 @@ export default function Login() {
 
             <form action={action} className="space-y-6 w-full max-w-md">
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="email" className="block text-sm font-medium">
                         Email address
                     </label>
                     <input
@@ -76,7 +77,7 @@ export default function Login() {
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="password" className="block text-sm font-medium ">
                         Password
                     </label>
                     <input
@@ -90,12 +91,14 @@ export default function Login() {
                 </div>
 
                 <div>
-                    <button
+                    <Button
                         type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        variant={"outline"}
+                        size={"lg"}
+                        className="w-full"
                     >
                         Sign in
-                    </button>
+                    </Button>
                 </div>
             </form>
         </div>

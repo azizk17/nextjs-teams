@@ -30,10 +30,10 @@ export async function isAuthorized(userId: string, contextId: string): Promise<b
 export async function getUserTeams(userId: string) {
     const userTeams = await db
         .select({
-            teamId: teamsTable.id,
-            teamName: teamsTable.name,
-            teamAvatar: teamsTable.avatar,
-            teamDescription: teamsTable.description,
+            id: teamsTable.id,
+            name: teamsTable.name,
+            avatar: teamsTable.avatar,
+            description: teamsTable.description,
             joinedAt: teamMembersTable.joinedAt,
             isDisabled: teamMembersTable.disabled
         })

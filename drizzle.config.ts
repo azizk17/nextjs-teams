@@ -10,7 +10,7 @@ export default defineConfig({
     out: './src/db/drizzle',
     schema: './src/db/schema/index.ts',
     dbCredentials: {
-        url: process.env.DATABASE_URL!,
+        url:process.env.POSTGRES_URL!,
         ssl: false,
     },
     // Print all statements
