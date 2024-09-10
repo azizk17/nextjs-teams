@@ -43,3 +43,36 @@ export async function createTeamAction(prevState: any, formData: FormData) {
         };
     }
 }
+
+export async function updateTeamMemberRoleAction(prevState: any, formData: FormData) {
+    // Sleep for 1s
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const validated = formSchema.safeParse({
+        role: formData.get("role"),
+    });
+
+    if (!validated.success) {
+        return {
+            success: false,
+            status: 400,
+            errors: validated.error.flatten().fieldErrors,
+        };
+    }
+
+    try {
+        // Your logic to update a team member role goes here
+        // For example:
+        // const updatedTeamMember = await updateTeamMemberRole(validated.data);
+
+        revalidatePath("/teams");
+        return { success: true, data: validated.data };
+    } catch (error) {
+        return {
+            success: false,
+            status: 500,
+            message: error instanceof Error ? error.message : "An unexpected error occurred",
+        }
+    }
+}
+

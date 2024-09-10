@@ -1,10 +1,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { MoreVertical, UserCheck, UserMinus, Trash2 } from "lucide-react"
 import { getTeamById } from "@/auth/teams"
 import { User2 } from "lucide-react"
 import { TeamRepository } from "@/repositories"
-
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
+import UserRolesManager from "../userRoleForm"
+import { updateTeamMemberRoleAction } from "../_actions"
 // Mock data - replace with actual data fetching logic
 const teamData = {
   name: "Engineering Team",
@@ -33,7 +44,15 @@ const teamData = {
 export default async function TeamPage({ params }: { params: { id: string } }) {
   const teamRepository = new TeamRepository();
   const data = await teamRepository.getTeamById(params.id)
-  return <pre>{JSON.stringify(data, null, 2)}</pre>
+//   return <pre>{JSON.stringify(data, null, 2)}</pre>
+const roles = [
+    { id: '1', name: 'Admin' },
+    { id: '2', name: 'Member' },
+    { id: '3', name: 'Guest' },
+    { id: '4', name: 'Owner' },
+    { id: '5', name: 'Editor' },
+    { id: '6', name: 'Viewer' },
+  ];
   return (
 
     <div className="container mx-auto p-6">
@@ -44,7 +63,6 @@ export default async function TeamPage({ params }: { params: { id: string } }) {
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="channels">Channels</TabsTrigger>
         </TabsList>
 
         <TabsContent value="members">
@@ -53,18 +71,41 @@ export default async function TeamPage({ params }: { params: { id: string } }) {
               <CardTitle>Team Members</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-4">
+              <ul className=" divide-y divide-muted">
                 {data?.members.map(member => (
-                  <li key={member.id} className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={member?.user?.avatar} />
-                      <AvatarFallback>
-                        <User2 className="" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{member.user.name}</p>
-                      <p className="text-sm text-gray-500">{member?.role}</p>
+                  <li key={member.id} className="flex items-center justify-between space-x-4 py-2 ">
+                    <div className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarImage src={member.avatar} />
+                        <AvatarFallback>
+                          <User2 className="w-4 h-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{member.username}</p>
+                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                    <UserRolesManager roles={roles} initialRoles={member.roles} formAction={updateTeamMemberRoleAction} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          <span>Toggle Activation</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     </div>
                   </li>
                 ))}

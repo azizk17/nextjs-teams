@@ -1,15 +1,7 @@
 import { db } from "@/db";
 import { usersTable, rolesTable, permissionsTable, teamsTable, teamMembersTable, teamMemberRolesTable, userRolesTable, projectsTable, rolePermissionsTable, teamProjectsTable } from "../schema";
 import { faker } from "@faker-js/faker";
-import { createAvatar } from '@dicebear/core';
-import { lorelei } from '@dicebear/collection';
 
-const generateAvatar = (name: string) => {
-    return createAvatar(lorelei, {
-        seed: name,
-        // ... other options
-    });
-}
 
 
 
