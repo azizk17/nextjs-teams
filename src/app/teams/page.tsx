@@ -6,6 +6,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Input } from "@/components/ui/input";
 import { getUserTeams } from '@/auth';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CreateTeamForm } from './_forms';
+import { TeamRepository } from '@/repositories';
 
 const teamsData = [
   { id: 1, name: 'Engineering', memberCount: 15, description: 'Software development team' },
@@ -15,52 +18,46 @@ const teamsData = [
 ];
 
 const TeamCard = ({ team }) => (
-  <Link href={`/teams/${team.id}`} className="block group">
-    <Card className="hover:shadow-md transition-shadow group-hover:bg-primary/5">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{team.name}</CardTitle>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>View Team</DropdownMenuItem>
-            <DropdownMenuItem>Edit Team</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Delete Team</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardHeader>
-      <CardContent>
-        <CardDescription>{team.description}</CardDescription>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="flex items-center">
-          <Users className="mr-2 h-4 w-4 opacity-70" /> <span>{team.memberCount} members</span>
-        </div>
-        <Button variant="outline" size="sm">Manage</Button>
-      </CardFooter>
-    </Card>
-  </Link>
+  <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <CardContent className="p-4">
+      <div className="flex items-center mb-2">
+        <Avatar className="me-2">
+          <AvatarImage src={team.avatar} />
+          <AvatarFallback>
+            <Users className="h-6 w-6 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
+        <h3 className="font-semibold text-lg truncate hover:text-primary/80">
+          <Link href={`/teams/${team.id}`}>
+            {team.name}
+          </Link>
+        </h3>
+      </div>
+      <p className="text-sm text-muted-foreground mb-2">{team.description}</p>
+      <div className="flex items-center text-sm text-muted-foreground">
+        <Users className="mr-2 h-4 w-4" />
+        <span>{team.memberCount} members</span>
+      </div>
+    </CardContent>
+    <CardFooter className="p-2 bg-secondary">
+      <Link href={`/teams/${team.id}`}>
+        <Button variant="secondary" size="sm" className="w-full">
+          View Team
+        </Button>
+      </Link>
+    </CardFooter>
+  </Card >
 );
 
-export default async function Page(){
-
-    const data = await getUserTeams("2")
+export default async function Page() {
+  const repo = new TeamRepository()
+  // const data = await getUserTeams("2")
+  const data = await repo.getTeamsByUserId("2")
   return (
     <div className="container mx-auto p-4">
-        <pre>
-            {JSON.stringify(data, null,2)}
-        </pre>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Teams</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Team
-        </Button>
+        <CreateTeamForm />
       </div>
       <div className="mb-6">
         <Input type="text" placeholder="Search teams..." className="max-w-sm" />

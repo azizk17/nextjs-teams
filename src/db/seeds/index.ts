@@ -37,19 +37,19 @@ async function main() {
 // Reset tables before dumping data                                 // 
 // only in DEV environment                                          //
 // ---------------------------------------------------------------- //
-// async function resetTable(table: string) {
-//     return db.execute(
-//         sql.raw(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`)
-//     );
-// }
+async function resetTable(table: string) {
+    return db.execute(
+        sql.raw(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`)
+    );
+}
 
 
-// console.log("Resetting tables...");
-// for (const [_, value] of Object.entries(schema)) {
-//     if (value && typeof value === "object" && value instanceof PgTable) {
-//         resetTable(getTableName(value));
-//     }
-// }
+console.log("Resetting tables...");
+for (const [_, value] of Object.entries(schema)) {
+    if (value && typeof value === "object" && value instanceof PgTable) {
+        resetTable(getTableName(value));
+    }
+}
 
 // Run main and handle unhandled rejections
 main().catch(error => {

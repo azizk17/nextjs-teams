@@ -1,6 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getTeamById } from "@/auth/teams"
+import { User2 } from "lucide-react"
+import { TeamRepository } from "@/repositories"
 
 // Mock data - replace with actual data fetching logic
 const teamData = {
@@ -27,11 +30,15 @@ const teamData = {
   ],
 }
 
-export default function TeamPage({ params }: { params: { id: string } }) {
+export default async function TeamPage({ params }: { params: { id: string } }) {
+  const teamRepository = new TeamRepository();
+  const data = await teamRepository.getTeamById(params.id)
+  return <pre>{JSON.stringify(data, null, 2)}</pre>
   return (
+
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">{teamData.name}</h1>
-      
+      <h1 className="text-3xl font-bold mb-6">{data?.name}</h1>
+
       <Tabs defaultValue="members" className="w-full">
         <TabsList>
           <TabsTrigger value="members">Members</TabsTrigger>
@@ -39,7 +46,7 @@ export default function TeamPage({ params }: { params: { id: string } }) {
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="channels">Channels</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="members">
           <Card>
             <CardHeader>
@@ -47,15 +54,17 @@ export default function TeamPage({ params }: { params: { id: string } }) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
-                {teamData.members.map(member => (
+                {data?.members.map(member => (
                   <li key={member.id} className="flex items-center space-x-4">
                     <Avatar>
-                      <AvatarImage src={`https://avatar.vercel.sh/${member.name}`} />
-                      <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      <AvatarImage src={member?.user?.avatar} />
+                      <AvatarFallback>
+                        <User2 className="" />
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{member.name}</p>
-                      <p className="text-sm text-gray-500">{member.role}</p>
+                      <p className="font-semibold">{member.user.name}</p>
+                      <p className="text-sm text-gray-500">{member?.role}</p>
                     </div>
                   </li>
                 ))}
@@ -63,7 +72,7 @@ export default function TeamPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="activity">
           <Card>
             <CardHeader>
@@ -81,7 +90,7 @@ export default function TeamPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="projects">
           <Card>
             <CardHeader>
@@ -99,7 +108,7 @@ export default function TeamPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="channels">
           <Card>
             <CardHeader>

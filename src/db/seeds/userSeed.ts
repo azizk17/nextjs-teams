@@ -1,14 +1,26 @@
 import { db } from "@/db";
-import { usersTable, rolesTable, permissionsTable, channelsTable, rolePermissionsTable, teamsTable, teamMembersTable, teamChannelsTable, teamMemberRolesTable, userRolesTable } from "../schema";
+import { usersTable, rolesTable, permissionsTable, teamsTable, teamMembersTable, teamMemberRolesTable, userRolesTable, projectsTable, rolePermissionsTable, teamProjectsTable } from "../schema";
 import { faker } from "@faker-js/faker";
+import { createAvatar } from '@dicebear/core';
+import { lorelei } from '@dicebear/collection';
+
+const generateAvatar = (name: string) => {
+    return createAvatar(lorelei, {
+        seed: name,
+        // ... other options
+    });
+}
+
+
 
 export async function seed() {
     // Seed Users
     const users = Array.from({ length: 10 }, (_, i) => ({
-        // id: faker.string.nanoid(9),
         id: i.toString(),
         name: faker.person.fullName(),
+        avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${faker.word.noun()}`,
         username: faker.internet.userName(),
+        password: "12345678",
         email: faker.internet.email(),
         createdAt: faker.date.past(),
         updatedAt: faker.date.recent(),
@@ -40,17 +52,19 @@ export async function seed() {
     const teams = Array.from({ length: 3 }, (_, i) => ({
         id: i.toString(),
         name: faker.company.name(),
-        avatar: faker.image.avatarGitHub(),
+        avatar: `https://api.dicebear.com/9.x/identicon/svg?seed=${faker.word.noun()}`,
         description: faker.company.catchPhrase(),
         ownerId: faker.helpers.arrayElement(users).id,
         createdAt: faker.date.past(),
         updatedAt: faker.date.recent(),
     }));
 
-    // Seed Channels
-    const channels = Array.from({ length: 5 }, (_, i) => ({
+    // Seed Projects
+    const projects = Array.from({ length: 5 }, (_, i) => ({
         id: i.toString(),
         name: faker.word.noun(),
+        avatar: `https://api.dicebear.com/9.x/shapes/svg?seed=${faker.string.nanoid(10)}&backgroundType=gradientLinear&backgroundColor=${faker.color.rgb().slice(1)}&size=${faker.number.int({ min: 100, max: 500 })}&shapeColor=${faker.color.rgb().slice(1)}`,
+        // avatar: `https://api.dicebear.com/9.x/shapes/svg?seed=${faker.word.noun()}`,
         description: faker.lorem.sentence(),
         ownerId: faker.helpers.arrayElement(users).id,
         createdAt: faker.date.past(),
@@ -78,11 +92,11 @@ export async function seed() {
         }));
     });
 
-    // Seed Team Channels
-    const teamChannels = teams.flatMap(team =>
-        channels.map(channel => ({
+    // Seed Team Projects
+    const teamProjects = teams.flatMap(team =>
+        projects.map(project => ({
             teamId: team.id,
-            channelId: channel.id,
+            projectId: project.id,
         }))
     );
 
@@ -109,10 +123,10 @@ export async function seed() {
     await db.insert(rolesTable).values(roles);
     await db.insert(permissionsTable).values(permissions);
     await db.insert(teamsTable).values(teams);
-    await db.insert(channelsTable).values(channels);
+    await db.insert(projectsTable).values(projects);
     await db.insert(rolePermissionsTable).values(rolePermissions);
     await db.insert(teamMembersTable).values(teamMembers);
-    await db.insert(teamChannelsTable).values(teamChannels);
+    await db.insert(teamProjectsTable).values(teamProjects);
     await db.insert(teamMemberRolesTable).values(teamMemberRoles);
     await db.insert(userRolesTable).values(userRoles);
 

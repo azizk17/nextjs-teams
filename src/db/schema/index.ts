@@ -1,13 +1,37 @@
-import { pgTable, text, timestamp, uuid, primaryKey, integer, boolean, foreignKey, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, primaryKey, integer, boolean, foreignKey, unique, json } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { customAlphabet } from 'nanoid'
 
+const myNanoId = (length: number): string => {
+    const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', length)
+    return nanoid()
+}
+// Projects table
+export const projectsTable = pgTable('projects', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    avatar: text('avatar'),
+    description: text('description'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+    ownerId: text('owner_id').notNull().references(() => usersTable.id),
+});
 
+// Team Projects table
+export const teamProjectsTable = pgTable('team_projects', {
+    teamId: text('team_id').notNull().references(() => teamsTable.id),
+    projectId: text('project_id').notNull().references(() => projectsTable.id),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.teamId, t.projectId] }),
+}));
 
 // Users table
 export const usersTable = pgTable('users', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
-    username: text('username').notNull().unique(),
+    avatar: text('avatar'),
+    username: text('username').notNull().unique().$defaultFn(() => myNanoId(8)),
+    password: text('password').notNull(),
     email: text('email').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -17,15 +41,7 @@ export const sessionsTable = pgTable("session", {
     userId: text("user_id").notNull().references(() => usersTable.id),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull()
 });
-// Channels table
-export const channelsTable = pgTable('channels', {
-    id: text('id').primaryKey(),
-    name: text('name').notNull(),
-    description: text('description'),
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
-    ownerId: text('owner_id').notNull().references(() => usersTable.id),
-});
+
 // Teams table
 export const teamsTable = pgTable('teams', {
     id: text('id').primaryKey(),
@@ -38,14 +54,6 @@ export const teamsTable = pgTable('teams', {
 });
 
 
-
-// Team Channels table
-export const teamChannelsTable = pgTable('team_channels', {
-    teamId: text('team_id').notNull().references(() => teamsTable.id),
-    channelId: text('channel_id').notNull().references(() => channelsTable.id),
-}, (t) => ({
-    pk: primaryKey({ columns: [t.teamId, t.channelId] }),
-}));
 
 // Team Members table
 export const teamMembersTable = pgTable('team_members', {
@@ -109,7 +117,7 @@ export const userRolesTable = pgTable('user_roles', {
 export const usersRelations = relations(usersTable, ({ many }) => ({
     roles: many(userRolesTable),
     memberOf: many(teamMembersTable),
-    channels: many(channelsTable),
+    projects: many(projectsTable),
     teams: many(teamsTable),
 }));
 
@@ -143,30 +151,30 @@ export const rolePermissionsRelations = relations(rolePermissionsTable, ({ one }
     }),
 }));
 
-export const channelsRelations = relations(channelsTable, ({ many, one }) => ({
-    teams: many(teamChannelsTable),
+export const projectsRelations = relations(projectsTable, ({ many, one }) => ({
+    teams: many(teamProjectsTable),
     owner: one(usersTable, {
-        fields: [channelsTable.ownerId],
+        fields: [projectsTable.ownerId],
         references: [usersTable.id],
     }),
 }));
 
 export const teamsRelations = relations(teamsTable, ({ many, one }) => ({
-    channels: many(teamChannelsTable),
+    projects: many(teamProjectsTable),
     members: many(teamMembersTable),
     owner: one(usersTable, {
         fields: [teamsTable.ownerId],
         references: [usersTable.id],
     }),
 }));
-export const teamChannelsRelations = relations(teamChannelsTable, ({ one }) => ({
+export const teamProjectsRelations = relations(teamProjectsTable, ({ one }) => ({
     team: one(teamsTable, {
-        fields: [teamChannelsTable.teamId],
+        fields: [teamProjectsTable.teamId],
         references: [teamsTable.id],
     }),
-    channel: one(channelsTable, {
-        fields: [teamChannelsTable.channelId],
-        references: [channelsTable.id],
+    project: one(projectsTable, {
+        fields: [teamProjectsTable.projectId],
+        references: [projectsTable.id],
     }),
 }));
 export const teamMembersRelations = relations(teamMembersTable, ({ one, many }) => ({
@@ -195,4 +203,29 @@ export const teamMemberRolesRelations = relations(teamMemberRolesTable, ({ one }
 
 
 
+
+
+// Types
+// -------------------------------------------------------------------------------------------------
+export type User = typeof usersTable.$inferSelect;
+export type InsertUser = typeof usersTable.$inferInsert;
+
+export type Role = typeof rolesTable.$inferSelect;
+export type InsertRole = typeof rolesTable.$inferInsert;
+
+
+
+// export type UserWithRelations = User & { roles?: Role[] }
+
+export type Team = typeof teamsTable.$inferSelect;
+export type InsertTeam = typeof teamsTable.$inferInsert;
+
+export type Project = typeof projectsTable.$inferSelect;
+export type InsertProject = typeof projectsTable.$inferInsert;
+
+export type TeamMember = typeof teamMembersTable.$inferSelect;
+export type InsertTeamMember = typeof teamMembersTable.$inferInsert;
+
+export type TeamMemberRole = typeof teamMemberRolesTable.$inferSelect;
+export type InsertTeamMemberRole = typeof teamMemberRolesTable.$inferInsert;
 
