@@ -1,4 +1,4 @@
-import { User } from "@/db/schema";
+import { Role, User } from "@/db/schema";
 import { TeamDto } from "./TeamDto";
 import { Dto } from "./dto";
 export class UserDto extends Dto<User> {
@@ -25,3 +25,14 @@ export class UserDto extends Dto<User> {
         }
     }
 }
+
+// roles 
+export class RoleDto extends Dto<Role> {
+    static from(data: Role): Record<string, any> {
+        return {
+            id: data.id,
+            name: data.name,
+        }
+    }
+}
+

@@ -1,16 +1,7 @@
-import { TeamMemberRole, Team, TeamMember, User, Project } from "@/db/schema";
-import { UserDto } from "./UserDto";
+import { TeamMemberRole, Team, TeamMember, User, Project, Role } from "@/db/schema";
+import { RoleDto, UserDto } from "./UserDto";
 import { Dto } from "./dto";
-// export class TeamMemberRoleDto extends Dto<TeamMemberRole, Record<string, any>> {
-//     from(data: TeamMemberRole): Record<string, any> {
-//         return {
-//             id: data.roleId,
-//             name: data.role.name,
-//             // description: data.role.description,
-//             assignedAt: data.assignedAt,
-//         }
-//     }
-// }
+
 
 type TeamWithRelations = Team & { owner: User, projects: Project[], members: (TeamMember & { user: User })[] }
 
@@ -29,19 +20,23 @@ export class TeamDto extends Dto<TeamWithRelations> {
         }
     }
 }
-export class TeamMemberDto extends Dto<TeamMember & { user: User }> {
-    static from(data: TeamMember & { user: User }): Record<string, any> {
+export class TeamMemberDto extends Dto<TeamMember & { user: User, roles: TeamMemberRole[] }> {
+    static from(data: TeamMember & { user: User, roles: TeamMemberRole[] }): Record<string, any> {
         return {
             yoooo: "yoooo" + data.userId,
-            id: data.userId,
+            ...UserDto.from(data.user),
             disabled: data.disabled,
             joinedAt: data.joinedAt,
-            updatedAt: data.updatedAt,
-            avatar: data.user.avatar,
-            username: data.user.username,
-            email: data.user.email,
-            // roles: TeamMemberRoleDto.fromMany(data.roles),
-            // ...(data.roles && { roles: RoleDto.fromMany(data.roles) }),
+            ...(data.roles && { roles: TeamMemberRoleDto.fromMany(data.roles) }),
+        }
+    }
+}
+
+export class TeamMemberRoleDto extends Dto<TeamMemberRole & { role: Role }> {
+    static from(data: TeamMemberRole & { role: Role }): Record<string, any> {
+        return {
+            ...RoleDto.from(data.role),
+            assignedAt: data.assignedAt,
         }
     }
 }
