@@ -1,12 +1,11 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import db from '@/db';
-import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable } from '@/db/schema';
+import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable } from '@/db/schema';
 import { NotFoundError, ConflictError } from '@/utils/errors';
 
-export async function getTeamById(id: string) {
+export async function getTeam(id: string) {
     const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, id));
-    if (!team) throw new NotFoundError('Team not found');
-    return team;
+    return team || null;
 }
 
 export async function createTeam(data: { name: string; avatar?: string; description?: string; ownerId: string }) {
@@ -92,16 +91,71 @@ export async function removeMemberFromTeam(teamId: string, userId: string) {
     return removedMember;
 }
 
-export async function getMembersByTeamId(teamId: string) {
-    return db.select({
-        id: usersTable.id,
-        username: usersTable.username,
-        email: usersTable.email,
-        avatar: usersTable.avatar,
-    }).from(teamMembersTable)
-        .innerJoin(usersTable, eq(teamMembersTable.userId, usersTable.id))
-        .where(eq(teamMembersTable.teamId, teamId));
+export async function getTeamMembers(teamId: string) {
 }
+export const getProjectMembersWithRoles1 = async (projectId: string) => {
+    return await db
+      .select({
+        projectId: projectsTable.id,
+        projectName: projectsTable.name,
+        userId: usersTable.id,
+        userName: usersTable.name,
+        userEmail: usersTable.email,
+        teamId: teamsTable.id,
+        teamName: teamsTable.name,
+        roleName: rolesTable.name,
+      })
+      .from(projectsTable)
+      .innerJoin(teamProjectsTable, eq(teamProjectsTable.projectId, projectsTable.id))
+      .innerJoin(teamsTable, eq(teamsTable.id, teamProjectsTable.teamId))
+      .innerJoin(teamMembersTable, eq(teamMembersTable.teamId, teamsTable.id))
+      .innerJoin(usersTable, eq(usersTable.id, teamMembersTable.userId))
+      .leftJoin(teamMemberRolesTable, eq(teamMemberRolesTable.teamMemberId, teamMembersTable.id))
+      .leftJoin(rolesTable, eq(rolesTable.id, teamMemberRolesTable.roleId))
+      .where(eq(projectsTable.id, projectId));
+  };
+
+// ... existing code ...
+
+
+// ... existing code ...
+
+export const getProjectMembersWithRoles = async (projectId: string) => {
+  const rolesSubquery = db
+    .select({
+      userId: teamMembersTable.userId,
+      teamId: teamMembersTable.teamId,
+      roles: sql<string>`json_agg(json_build_object('id', ${rolesTable.id}, 'name', ${rolesTable.name}))`.as('roles'),
+    })
+    .from(teamMembersTable)
+    .leftJoin(teamMemberRolesTable, eq(teamMemberRolesTable.teamMemberId, teamMembersTable.id))
+    .leftJoin(rolesTable, eq(rolesTable.id, teamMemberRolesTable.roleId))
+    .groupBy(teamMembersTable.userId, teamMembersTable.teamId)
+    .as('roles_subquery');
+
+  return await db
+    .select({
+    //   projectId: projectsTable.id,
+      projectName: projectsTable.name,
+      userId: usersTable.id,
+      userName: usersTable.name,
+      userEmail: usersTable.email,
+      userAvatar: usersTable.avatar,
+    //   teamId: teamsTable.id,
+    //   teamName: teamsTable.name,
+      roles: rolesSubquery.roles,
+    })
+    .from(projectsTable)
+    .innerJoin(teamProjectsTable, eq(teamProjectsTable.projectId, projectsTable.id))
+    .innerJoin(teamsTable, eq(teamsTable.id, teamProjectsTable.teamId))
+    .innerJoin(teamMembersTable, eq(teamMembersTable.teamId, teamsTable.id))
+    .innerJoin(usersTable, eq(usersTable.id, teamMembersTable.userId))
+    .innerJoin(rolesSubquery, and(
+      eq(rolesSubquery.userId, usersTable.id),
+      eq(rolesSubquery.teamId, teamsTable.id)
+    ))
+    .where(eq(projectsTable.id, projectId));
+};
 
 export async function getMembersByProjectId(projectId: string) {
     return db.select({
