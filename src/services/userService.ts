@@ -123,8 +123,18 @@ export async function getAllWithRolesFlat() {
  * @param {string} email - The email of the user to retrieve.
  * @returns {Promise<User | null>} A promise that resolves to the user or null if not found.
  */
-export async function getByEmail(email: string): Promise<User | null> {
+export async function getUserByEmail(email: string): Promise<User | null> {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    return user;
+}
+
+/**
+ * Retrieves a user by their username.
+ * @param {string} username - The username of the user to retrieve.
+ * @returns {Promise<User | null>} A promise that resolves to the user or null if not found.
+ */
+export async function getUserByUsername(username: string): Promise<User | null> {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username));
     return user;
 }
 

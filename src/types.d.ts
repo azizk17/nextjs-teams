@@ -1,4 +1,6 @@
-export type ActionResult<T = any> = {
+declare global {
+}
+export type ActionResponse<T = any> = {
     success: boolean;
     message?: string;
     data?: T;

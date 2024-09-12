@@ -9,7 +9,7 @@ const myNanoId = (length: number): string => {
 }
 // Projects table
 export const projectsTable = pgTable('projects', {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(10)),
     name: text('name').notNull(),
     avatar: text('avatar'),
     description: text('description'),
@@ -28,7 +28,7 @@ export const teamProjectsTable = pgTable('team_projects', {
 
 // Users table
 export const usersTable = pgTable('users', {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(10)),
     name: text('name').notNull(),
     avatar: text('avatar'),
     username: text('username').notNull().unique().$defaultFn(() => myNanoId(8)),
@@ -45,7 +45,7 @@ export const sessionsTable = pgTable("session", {
 
 // Teams table
 export const teamsTable = pgTable('teams', {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(10)),
     name: text('name').notNull(),
     avatar: text('avatar'),
     description: text('description'),
@@ -58,7 +58,7 @@ export const teamsTable = pgTable('teams', {
 
 // Team Members table
 export const teamMembersTable = pgTable('team_members', {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(8)),
     teamId: text('team_id').notNull().references(() => teamsTable.id),
     userId: text('user_id').notNull().references(() => usersTable.id),
     disabled: boolean('disabled').default(false),
@@ -112,7 +112,22 @@ export const userRolesTable = pgTable('user_roles', {
     pk: primaryKey({ columns: [t.userId, t.roleId] }),
 }));
 
+export const teamInvitationsTable = pgTable('team_invitations', {
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(10)),
+    teamId: text('team_id').notNull().references(() => teamsTable.id),
+    inviterId: text('inviter_id').notNull().references(() => usersTable.id),
+    inviteeEmail: text('invitee_email').notNull(),
+    status: text('status').notNull().default('pending'),
+    role: text('role').notNull(),
+    token: text('token').notNull().unique(),
+    expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Relations
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
@@ -221,6 +236,8 @@ export type InsertRole = typeof rolesTable.$inferInsert;
 
 export type Team = typeof teamsTable.$inferSelect;
 export type InsertTeam = typeof teamsTable.$inferInsert;
+export const CreateTeamSchema = createInsertSchema(teamsTable);
+
 
 export type Project = typeof projectsTable.$inferSelect;
 export type InsertProject = typeof projectsTable.$inferInsert;
@@ -231,3 +248,6 @@ export type InsertTeamMember = typeof teamMembersTable.$inferInsert;
 export type TeamMemberRole = typeof teamMemberRolesTable.$inferSelect;
 export type InsertTeamMemberRole = typeof teamMemberRolesTable.$inferInsert;
 
+export type TeamInvitation = typeof teamInvitationsTable.$inferSelect;
+export type InsertTeamInvitation = typeof teamInvitationsTable.$inferInsert;
+export const CreateTeamInvitationSchema = createInsertSchema(teamInvitationsTable);
