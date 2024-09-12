@@ -26,7 +26,9 @@ if (process.env.NODE_ENV !== "development") {
 
 async function main() {
     console.log("Seeding...");
+    await initalSeed();
 
+    // fake data only for dev 
     await userSeed();
     console.log("*** Seeding complete ***");
 }

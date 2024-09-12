@@ -371,3 +371,9 @@ export async function inviteMembersAction(prevState: any, formData: FormData): P
     }
 }
 
+// toggle team status
+export async function toggleTeamStatusAction(prevState: any, formData: FormData): Promise<ActionResponse> {
+    const validated = CreateTeamSchema.pick({ id: true }).safeParse({
+        id: formData.get("id"),
+    });
+}

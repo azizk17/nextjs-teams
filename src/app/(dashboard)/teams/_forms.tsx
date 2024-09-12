@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { createTeamAction, updateTeamAction } from './_actions';
-import { PencilIcon, PlusIcon } from 'lucide-react';
+import { createTeamAction, deleteTeamAction, inviteMembersAction, toggleTeamStatusAction, updateTeamAction } from './_actions';
+import { CircleCheckIcon, CircleXIcon, Loader2, PauseCircleIcon, PencilIcon, PlayCircleIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 // Define the Zod schema for team creation
 const TeamSchema = z.object({
@@ -96,7 +97,7 @@ export function UpdateTeamForm({ team }: { team: { id: string; name: string; des
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" size="icon">
                     <PencilIcon className="w-4 h-4" />
                 </Button>
             </DialogTrigger>
@@ -150,7 +151,7 @@ export function UpdateTeamForm({ team }: { team: { id: string; name: string; des
 
 // InviteMembersForm component for inviting members to a team.
 // -------------------------------------------------------------------------------------------------
-export function InviteMembersForm({ team }: { team: { id: string; name: string; description?: string } }) {
+export function InviteMembersForm({ team, trigger }: { team: { id: string; name: string; description?: string }, trigger: React.ReactNode }) {
     const [open, setOpen] = useState(false);
     const [state, actions, isPending] = useActionState(inviteMembersAction, null);
 
@@ -167,9 +168,7 @@ export function InviteMembersForm({ team }: { team: { id: string; name: string; 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline">
-                    <PlusIcon className="w-4 h-4" />
-                </Button>
+                {trigger}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -204,3 +203,67 @@ export function InviteMembersForm({ team }: { team: { id: string; name: string; 
         </Dialog>
     );
 }
+
+export function ToggleTeamStatusForm({ team, trigger }: { team: { id: string; isEnabled: boolean }, trigger: React.ReactNode }) {
+    const [state, actions, isPending] = useActionState(toggleTeamStatusAction, null);
+
+    useEffect(() => {
+        if (state?.success) {
+            toast.success(state.message);
+        }
+        if (state?.success === false) {
+            toast.error(state.message);
+        }
+    }, [state]);
+
+    return (
+        <form action={actions}>
+            <input type="hidden" name="id" value={team.id} />
+            <Button type="submit" variant={team.isEnabled ? "outline" : "default"} size="sm" disabled={isPending}>
+                {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : team.isEnabled ? <PauseCircleIcon className="w-4 h-4 mr-2" /> : <PlayCircleIcon className="w-4 h-4 mr-2" />}
+                {team.isEnabled ? 'Deactivate Team' : 'Activate Team'}   
+            </Button>
+        </form>
+    );
+}
+
+export function DeleteTeamForm({ team, trigger }: { team: { id: string; }, trigger: React.ReactNode }) {
+    const [state, actions, isPending] = useActionState(deleteTeamAction, null);
+
+    useEffect(() => {
+        if (state?.success) {
+            toast.success(state.message);
+        }
+    }, [state]);
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isPending}>
+                    {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrashIcon className="w-4 h-4 mr-2" />}
+                    Delete Team
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the team
+                        and remove all associated data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <form action={actions}>
+                        <AlertDialogAction >
+                            <input type="hidden" name="id" value={team.id} />
+                            <TrashIcon className="w-4 h-4 mr-2" />
+                            Delete Team
+                        </AlertDialogAction>
+                    </form>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+

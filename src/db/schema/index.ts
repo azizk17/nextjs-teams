@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, primaryKey, integer, boolean, foreignKey, unique, json } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, primaryKey, integer, boolean, foreignKey, unique, json, serial } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -72,7 +72,7 @@ export const teamMembersTable = pgTable('team_members', {
 // Each user can have multiple roles in a team
 export const teamMemberRolesTable = pgTable('team_member_roles', {
     teamMemberId: text('team_member_id').notNull().references(() => teamMembersTable.id),
-    roleId: text('role_id').notNull().references(() => rolesTable.id),
+    roleId: integer('role_id').notNull().references(() => rolesTable.id),
     assignedAt: timestamp('assigned_at').defaultNow(),
 }, (t) => ({
     pk: primaryKey({ columns: [t.teamMemberId, t.roleId] }),
@@ -85,20 +85,20 @@ export const teamMemberRolesTable = pgTable('team_member_roles', {
 
 // Roles table
 export const rolesTable = pgTable('roles', {
-    id: text('id').primaryKey(),
+    id: serial('id').primaryKey(),
     name: text('name').notNull().unique(),
     description: text('description'),
 });
 // Permissions table
 export const permissionsTable = pgTable('permissions', {
-    id: text('id').primaryKey(),
+    id: serial('id').primaryKey(),
     name: text('name').notNull().unique(),
     description: text('description'),
 });
 // Junction table for roles and permissions (many-to-many)
 export const rolePermissionsTable = pgTable('role_permissions', {
-    roleId: text('role_id').notNull().references(() => rolesTable.id),
-    permissionId: text('permission_id').notNull().references(() => permissionsTable.id),
+    roleId: integer('role_id').notNull().references(() => rolesTable.id),
+    permissionId: integer('permission_id').notNull().references(() => permissionsTable.id),
 }, (t) => ({
     pk: primaryKey({ columns: [t.roleId, t.permissionId] }),
 }));
@@ -106,7 +106,7 @@ export const rolePermissionsTable = pgTable('role_permissions', {
 // User Roles table (for global roles)
 export const userRolesTable = pgTable('user_roles', {
     userId: text('user_id').notNull().references(() => usersTable.id),
-    roleId: text('role_id').notNull().references(() => rolesTable.id),
+    roleId: integer('role_id').notNull().references(() => rolesTable.id),
     assignedAt: timestamp('assigned_at').defaultNow(),
 }, (t) => ({
     pk: primaryKey({ columns: [t.userId, t.roleId] }),
@@ -118,7 +118,7 @@ export const teamInvitationsTable = pgTable('team_invitations', {
     inviterId: text('inviter_id').notNull().references(() => usersTable.id),
     inviteeEmail: text('invitee_email').notNull(),
     status: text('status').notNull().default('pending'),
-    role: text('role').notNull(),
+    roleId: integer('role_id').notNull().references(() => rolesTable.id),
     token: text('token').notNull().unique(),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').defaultNow(),

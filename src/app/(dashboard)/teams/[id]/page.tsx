@@ -3,13 +3,13 @@ import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTeam, getTeamMembers, getProjectMembersWithRoles } from "@/services/teamService";
-import { MoreVerticalIcon, PencilIcon, PlusIcon, User2Icon } from "lucide-react";
+import { MoreVerticalIcon, PencilIcon, User2Icon, PlusIcon, TrashIcon, PowerIcon, EditIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UpdateTeamForm } from "../_forms";
+import { DeleteTeamForm, InviteMembersForm, ToggleTeamStatusForm, UpdateTeamForm } from "../_forms";
 import { auth } from "@/services/auth";
 
 export default async function Page({ params }: { params: { id: string } }) {
@@ -27,7 +27,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                     <CardHeader>
                         <div className="flex items-center space-x-4 mt-2">
                             <Avatar className="w-16 h-16">
-                                <AvatarImage src={team.avatar} alt={`${team.name} avatar`} className="w-full h-full" />
+                                <AvatarImage src={team.avatar!} alt={`${team.name} avatar`} className="w-full h-full" />
                                 <AvatarFallback>
                                     <User2Icon className="w-8 h-8" />
                                 </AvatarFallback>
@@ -42,11 +42,30 @@ export default async function Page({ params }: { params: { id: string } }) {
                         </div>
                         <CardDescription className="mt-2">{team.description}</CardDescription>
                         <div className="mt-2 text-sm text-muted-foreground">
-                            <p>Created: {new Date(team.createdAt).toLocaleDateString()}</p>
-                            <p>Last Updated: {formatDistanceToNow(new Date(team.updatedAt), { addSuffix: true })}</p>
+                            <p>Created: {new Date(team.createdAt!).toLocaleDateString()}</p>
+                            <p>Last Updated: {formatDistanceToNow(new Date(team.updatedAt!), { addSuffix: true })}</p>
                         </div>
                     </CardHeader>
                 </Card>
+
+                {/* New Action Bar */}
+                <div className="flex justify-between items-center bg-background p-4 rounded-lg shadow-sm">
+                    <div className="flex gap-2">
+                        {/* <Button variant="outline" size="sm">
+                            <EditIcon className="w-4 h-4 mr-2" />
+                            Edit Team
+                        </Button> */}
+                        <InviteMembersForm team={team} trigger={<Button variant="outline" size="sm">
+                            <PlusIcon className="w-4 h-4 mr-2" />       
+                            Add Member
+                        </Button>} />
+                        
+                    </div>
+                    <div className="flex gap-2">
+                        <ToggleTeamStatusForm team={team}  />
+                        <DeleteTeamForm team={team} />
+                    </div>
+                </div>
 
                 <Tabs defaultValue="members">
                     <TabsList className="grid w-full grid-cols-4">

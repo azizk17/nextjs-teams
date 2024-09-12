@@ -1,10 +1,7 @@
 import db from "@/db";
 import { Role, rolesTable, User, userRolesTable, usersTable } from "@/db/schema";
-import { UserDto, UserDto2 } from "@/dto/UserDto";
 import { eq } from "drizzle-orm";
 import _ from "lodash";
-
-const dto = new UserDto();
 
 /**
  * Retrieves a user by their ID.
@@ -13,7 +10,7 @@ const dto = new UserDto();
  */
 export async function getById(id: string) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
-    return UserDto2(user);
+    return user;
 }
 // get by id with roles
 export async function getByIdWithRoles(id: string) {
