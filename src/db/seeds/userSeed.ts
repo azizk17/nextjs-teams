@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { usersTable, rolesTable, permissionsTable, teamsTable, teamMembersTable, teamMemberRolesTable, userRolesTable, projectsTable, rolePermissionsTable, teamProjectsTable } from "../schema";
 import { faker } from "@faker-js/faker";
-
+import { roles, permissions } from "./initalSeed";
 
 
 
@@ -18,27 +18,6 @@ export async function seed() {
         updatedAt: faker.date.recent(),
     }));
 
-    // Seed Roles
-    const roles = [
-        { id: '1', name: 'Admin', description: 'Full access' },
-        { id: '2', name: 'Moderator', description: 'Can moderate content' },
-        { id: '3', name: 'User', description: 'Regular user access' },
-    ];
-
-    // Seed Permissions
-    const permissions = [
-        { id: '1', name: 'create_post', description: 'Can create posts' },
-        { id: '2', name: 'delete_post', description: 'Can delete posts' },
-        { id: '3', name: 'edit_user', description: 'Can edit user profiles' },
-        { id: '4', name: 'create_channel', description: 'Can create channels' },
-        { id: '5', name: 'delete_channel', description: 'Can delete channels' },
-        { id: '6', name: 'edit_channel', description: 'Can edit channels' },
-        { id: '7', name: 'add_member_to_team', description: 'Can add members to teams' },
-        { id: '8', name: 'remove_member_from_team', description: 'Can remove members from teams' },
-        { id: '9', name: 'create_team', description: 'Can create teams' },
-        { id: '10', name: 'delete_team', description: 'Can delete teams' },
-        { id: '11', name: 'edit_team', description: 'Can edit teams' },
-    ];
 
     // Seed Teams
     const teams = Array.from({ length: 3 }, (_, i) => ({
@@ -63,13 +42,7 @@ export async function seed() {
         updatedAt: faker.date.recent(),
     }));
 
-    // Seed Role Permissions
-    const rolePermissions = roles.flatMap(role =>
-        permissions.map(permission => ({
-            roleId: role.id,
-            permissionId: permission.id,
-        }))
-    );
+
 
     // Seed Team Members
     const teamMembers = teams.flatMap((team, i) => {
@@ -93,17 +66,19 @@ export async function seed() {
     );
 
     // Seed Team Member Roles
-    const teamMemberRoles = teamMembers.flatMap(member =>
-        roles.map(role => ({
+    const teamMemberRoles = teamMembers.flatMap(member => {
+        // Randomly select 1 or 2 roles for each team member
+        const selectedRoles = faker.helpers.arrayElements(roles, faker.number.int({ min: 1, max: 2 }));
+        return selectedRoles.map(role => ({
             teamMemberId: member.id,
             roleId: role.id,
             assignedAt: faker.date.recent(),
-        }))
-    );
+        }));
+    });
 
     // Seed User Roles (global roles)
     const userRoles = users.flatMap(user =>
-        roles.map(role => ({
+        faker.helpers.arrayElements(roles, faker.number.int({ min: 1, max: 2 })).map(role => ({
             userId: user.id,
             roleId: role.id,
             assignedAt: faker.date.recent(),
@@ -112,11 +87,8 @@ export async function seed() {
 
     // Insert data
     await db.insert(usersTable).values(users);
-    await db.insert(rolesTable).values(roles);
-    await db.insert(permissionsTable).values(permissions);
     await db.insert(teamsTable).values(teams);
     await db.insert(projectsTable).values(projects);
-    await db.insert(rolePermissionsTable).values(rolePermissions);
     await db.insert(teamMembersTable).values(teamMembers);
     await db.insert(teamProjectsTable).values(teamProjects);
     await db.insert(teamMemberRolesTable).values(teamMemberRoles);

@@ -1,5 +1,11 @@
+DO $$ BEGIN
+ CREATE TYPE "public"."type" AS ENUM('email_verification', 'password_reset', 'phone_verification', 'access_token', 'refresh_token');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "permissions" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	CONSTRAINT "permissions_name_unique" UNIQUE("name")
@@ -16,13 +22,13 @@ CREATE TABLE IF NOT EXISTS "projects" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "role_permissions" (
-	"role_id" text NOT NULL,
-	"permission_id" text NOT NULL,
+	"role_id" integer NOT NULL,
+	"permission_id" integer NOT NULL,
 	CONSTRAINT "role_permissions_role_id_permission_id_pk" PRIMARY KEY("role_id","permission_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "roles" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	CONSTRAINT "roles_name_unique" UNIQUE("name")
@@ -34,9 +40,23 @@ CREATE TABLE IF NOT EXISTS "session" (
 	"expires_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "team_invitations" (
+	"id" text PRIMARY KEY NOT NULL,
+	"team_id" text NOT NULL,
+	"inviter_id" text NOT NULL,
+	"invitee_email" text NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"role_id" integer NOT NULL,
+	"token" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "team_invitations_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "team_member_roles" (
 	"team_member_id" text NOT NULL,
-	"role_id" text NOT NULL,
+	"role_id" integer NOT NULL,
 	"assigned_at" timestamp DEFAULT now(),
 	CONSTRAINT "team_member_roles_team_member_id_role_id_pk" PRIMARY KEY("team_member_id","role_id"),
 	CONSTRAINT "team_member_roles_team_member_id_role_id_unique" UNIQUE("team_member_id","role_id")
@@ -68,20 +88,31 @@ CREATE TABLE IF NOT EXISTS "teams" (
 	"owner_id" text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "tokens" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"type" "type",
+	"token" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now()
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "user_roles" (
 	"user_id" text NOT NULL,
-	"role_id" text NOT NULL,
+	"role_id" integer NOT NULL,
 	"assigned_at" timestamp DEFAULT now(),
 	CONSTRAINT "user_roles_user_id_role_id_pk" PRIMARY KEY("user_id","role_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
+	"name" text,
 	"avatar" text,
 	"username" text NOT NULL,
-	"password" text NOT NULL,
 	"email" text NOT NULL,
+	"password" text NOT NULL,
+	"email_verified" boolean DEFAULT false,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now(),
 	CONSTRAINT "users_username_unique" UNIQUE("username"),
@@ -108,6 +139,24 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "session" ADD CONSTRAINT "session_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "team_invitations" ADD CONSTRAINT "team_invitations_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "team_invitations" ADD CONSTRAINT "team_invitations_inviter_id_users_id_fk" FOREIGN KEY ("inviter_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "team_invitations" ADD CONSTRAINT "team_invitations_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -150,6 +199,12 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "teams" ADD CONSTRAINT "teams_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "tokens" ADD CONSTRAINT "tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

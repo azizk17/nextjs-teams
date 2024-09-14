@@ -1,7 +1,7 @@
 import AnimateIn from "@/components/animate-in"
 
 import { auth } from "@/lib/auth"
-import { updateUser, verifyVerificationCode } from "@/services/users"
+import { updateUser, verifyVerificationCode } from "@/services/userService"
 import { CheckCircle, CheckCircle2, Info, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"

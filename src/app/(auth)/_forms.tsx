@@ -3,15 +3,17 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useActionState, useEffect, useState } from "react";
-import { signin, signup, resetPassword, signout, sendResetPassword, resendVerificationCode } from "./_actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle, Info, InfoIcon, Loader, Loader2, LogOutIcon } from "lucide-react";
+import { startTransition, useActionState, useEffect, useState } from "react";
+import { signin, signup, resetPassword, signout, resendVerificationCode, sendOtp, verifyOtp } from "./_actions";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, CheckCircle, Info, InfoIcon, Loader, Loader2, LogOutIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AnimateIn from "@/components/animate-in";
 import { toast } from "sonner";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
 
 
 /**
@@ -85,16 +87,11 @@ export function SignUpForm() {
                             <div className="grid gap-2">
                                 {state.success === false && (<div className="text-red-500">{state.message}</div>)}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid  gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="first-name">First name</Label>
-                                    <Input name="firstName" id="first-name" placeholder="Max" required />
-                                    {state.errors?.firstName && (<div className="text-red-500">{state.errors.firstName}</div>)}
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="last-name">Last name</Label>
-                                    <Input name="lastName" id="last-name" placeholder="Robinson" required />
-                                    {state.errors?.lastName && (<div className="text-red-500">{state.errors.lastName}</div>)}
+                                    <Label htmlFor="name">Name</Label>
+                                    <Input name="name" id="name" placeholder="Max" required />
+                                    {state.errors?.name && (<div className="text-red-500">{state.errors.name}</div>)}
                                 </div>
                             </div>
                             <div className="grid gap-2">
@@ -111,7 +108,10 @@ export function SignUpForm() {
                                 {isPending ? "Processing..." : "Sign up"}
                             </Button>
                             <Button type={"button"} variant="outline" className="w-full">
-                                Sign up with GitHub
+                                Sign up with GitHub <GitHubLogoIcon className="w-4 h-4 ms-2" />
+                            </Button>
+                            <Button type={"button"} variant="outline" className="w-full" disabled>
+                                Sign up with Google
                             </Button>
                         </div>
                         <div className="mt-4 text-center text-sm">
@@ -129,131 +129,157 @@ export function SignUpForm() {
 
 /**
  * 
- * Send reset password form component
+ * Send verification code form component
  * 
  */
-export function SendRestPasswordForm() {
+export function PasswordResetForm({ tokenKey }: { tokenKey: string }) {
+    const [stateSendOtp, formActionSendOtp, isPendingSendOtp] = useActionState(sendOtp, null);
+    const [verifyOtpState, verifyOtpAction, isVerifyOtpPending] = useActionState(verifyOtp, null);
+    const [resetPasswordState, resetPasswordAction, isResetPasswordPending] = useActionState(resetPassword, null);
 
-    const [state, formAction, isPending] = useActionState(sendResetPassword, {
-        error: null
-    });
+    const searchParams = useSearchParams();
+    const step = searchParams.get('step') || 'email';
+    const email = searchParams.get('email') || '';
 
-    return (
-        <div className=" grid gap-4 mx-auto max-w-xl  ">
-            <Card className=" w-full">
-                {state.success && (
-                    <AnimateIn from="opacity-0" to="opacity-100" className="text-center w-full min-w-full">
-                        <CardContent className="flex flex-col items-center justify-center p-5 gap-5">
-                            <CheckCircle className=" w-16 h-16  text-green-500" />
-                            <span className=" text-muted-foreground">An email has been sent to your email address</span>
-                        </CardContent>
-                    </AnimateIn>
-                )}
-
-                {!state.success && (
-                    <>
-                        <CardHeader>
-                            <CardTitle className="text-xl">Reset Password</CardTitle>
-                            <CardDescription>
-                                Enter your email below to reset your password
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form action={formAction}>
-                                <div className="grid gap-4">
-                                    {state.success === false && !isPending && (
-                                        <div className=" flex items-center justify-start gap-2">
-                                            <p className="text-red-500">{state.message}</p>
-                                            {state.status === 404 && (<Link href="/signup" className=" text-muted-foreground hover:text-primary">Sign up</Link>)}
-                                        </div>
-                                    )}
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input name="email" id="email" type="email" placeholder="m@example.com" required disabled={isPending} />
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={isPending}>
-                                        {isPending ? "Sending..." : "Send"}
-                                    </Button>
-                                </div>
-                                <div className="mt-4 text-center text-sm text-muted-foreground ">
-                                    <Link href="/signin" className="hover:text-primary">
-                                        Back to Sign in <ArrowRight className="inline-block w-4 h-4" />
-                                    </Link>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </>
-                )}
-
-            </Card>
-        </div >
-    )
-}
-
-/**
- * 
- * Reset password form component
- * 
- */
-export function RestPasswordForm({ token }: { token: string }) {
-    const router = useRouter()
-
-    const [state, formAction, isPending] = useActionState(resetPassword, {
-        error: null
-    });
+    const handleOtpComplete = (otp: string) => {
+        const formData = new FormData();
+        formData.append('otp', otp);
+        startTransition(() => {
+            verifyOtpAction(formData);
+        });
+    };
 
     useEffect(() => {
-        if (state.success) {
-            setTimeout(() => {
-                router.push("/signin");
-            }, 3000);
+        if (stateSendOtp?.success) {
+            toast("A verification code has been sent to your email address")
         }
-    }
-        , [state.success]);
-    return (
-        <div className="mx-auto max-w-sm w-full grid gap-4">
-            {state.success && (
-                <div className=" flex bg-secondary p-2 rounded-lg">
-                    <Loader2 className=" w-6 h-6 text-accent-foreground me-2 animate-spin" />
-                    <span className="text-accent-foreground">Your password has been reset successfully. Redirecting...</span>
-                </div>
-            )}
-            {state.error && (<div className="text-red-500 text-sm">{state.error}</div>)}
-            <Card className={cn(state.success && "opacity-70")}>
-                <CardHeader>
-                    <CardTitle className="text-xl">Reset Password</CardTitle>
-                    <CardDescription>
-                        Enter your new password below to reset your password
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form action={formAction}>
-                        <input type="hidden" name="token" value={token} />
-                        <div className="grid gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="new_password">New Password</Label>
-                                <Input name="new_password" id="new_password" type="password" required disabled={isPending || state.success} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="confirm_password">Confirm Password</Label>
-                                <Input name="confirm_password" id="confirm_password" type="password" required disabled={isPending || state.success} />
-                            </div>
-                            <Button type="submit" className="w-full " disabled={isPending || state.success}>
-                                {isPending ? "Processing..." : "Reset Password"}
-                            </Button>
-                        </div>
-                        <div className="mt-4 text-center text-sm">
-                            <Link href="/auth/signin" className="underline">
-                                Back to Sign in <ArrowRight className="inline-block w-4 h-4" />
-                            </Link>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
+        if (stateSendOtp?.success === false) {
+            toast.error(stateSendOtp.message)
+        }
+    }, [stateSendOtp]);
 
+    useEffect(() => {
+        if (verifyOtpState?.success) {
+            toast("OTP verified successfully")
+        }
+    }, [verifyOtpState?.success]);
+
+    return (
+        <Card className="w-full max-w-lg">
+            <CardHeader>
+                <CardTitle>{
+                    step === 'email' ? 'Reset Password' :
+                        step === 'otp' ? 'Verify Code' :
+                            'Set New Password'
+                }</CardTitle>
+                <CardDescription>{
+                    step === 'email' ? 'Enter your email to receive a verification code' :
+                        step === 'otp' ? 'Enter the 6-digit code sent to your email' :
+                            'Choose a new password for your account'
+                }</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {step === 'email' && (
+                    <form action={formActionSendOtp} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                placeholder="m@example.com"
+                                required
+                                defaultValue={email}
+                            />
+                        </div>
+                        <Button type="submit" className="w-full">
+                            {isPendingSendOtp ? "Sending..." : "Send Verification Code"}
+                        </Button>
+                    </form>
+                )}
+
+                {step === 'otp' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-center">
+                            {isVerifyOtpPending && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                </div>
+                            )}
+                            <InputOTP maxLength={6} onComplete={handleOtpComplete} disabled={isVerifyOtpPending}>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={0} className="w-12 h-12 text-lg" />
+                                    <InputOTPSlot index={1} className="w-12 h-12 text-lg" />
+                                    <InputOTPSlot index={2} className="w-12 h-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPSeparator />
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={3} className="w-12 h-12 text-lg" />
+                                    <InputOTPSlot index={4} className="w-12 h-12 text-lg" />
+                                    <InputOTPSlot index={5} className="w-12 h-12 text-lg" />
+                                </InputOTPGroup>
+                            </InputOTP>
+                        </div>
+                        <Button
+                            variant="link"
+                            className="w-full"
+                            onClick={() => {
+                                // Implement logic to resend OTP
+                                toast("Resending verification code...");
+                            }}
+                        >
+                            Resend verification code
+                        </Button>
+                    </div>
+                )}
+
+                {step === 'password' && (
+                    <form action={resetPasswordAction} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="newPassword">New Password</Label>
+                            <Input
+                                id="newPassword"
+                                name="newPassword"
+                                type="password"
+                                placeholder="Enter new password"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm Password</Label>
+                            <Input
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                type="password"
+                                placeholder="Confirm new password"
+                                required
+                            />
+                        </div>
+                        <Button type="submit" className="w-full">
+                            {isResetPasswordPending ? "Resetting..." : "Reset Password"}
+                        </Button>
+                    </form>
+                )}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+                {step !== 'email' && (
+                    <Button
+                        variant="ghost"
+                        onClick={() => {
+                            // Implement logic to go back to previous step
+                        }}
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                )}
+                <Link href="/signin" className="text-sm text-muted-foreground hover:underline">
+                    Back to Sign In
+                </Link>
+            </CardFooter>
+        </Card>
     )
 }
+
 
 // @deprecated
 export function SignOutForm({ trigger, loader }: { trigger: React.ReactNode, loader: React.ReactNode }) {
@@ -294,57 +320,57 @@ export function SignOutButton({ className }: { className?: string }) {
         </form>
     )
 }
-/**
- * 
- * Resend verification code action component
- * 
- */
-export function ResendVerificationCode({ type, value, label, className, createdAt }: {
-    type: string,
-    value: string, label: string, className: string, createdAt: Date | null
-}) {
-    const [state, formAction, isPending] = useActionState(resendVerificationCode, {});
+// /**
+//  * 
+//  * Resend verification code action component
+//  * 
+//  */
+// export function ResendVerificationCode({ type, value, label, className, createdAt }: {
+//     type: string,
+//     value: string, label: string, className: string, createdAt: Date | null
+// }) {
+//     const [state, formAction, isPending] = useActionState(resendVerificationCode, {});
 
-    const [timer, setTimer] = useState(0);
-    const [lastSent, setLastSent] = useState<Date | null>(createdAt);
-
-
-    // enable the button after the timer is done, start the timer based on the enableIn prop
-    // if the timer is not started yet
-    useEffect(() => {
-        if (lastSent && !timer) {
-            const diff = Math.floor((lastSent.getTime() + 60000 - Date.now()) / 1000);
-            if (diff > 0) {
-                setTimer(diff);
-            }
-        }
-        if (timer > 0) {
-            const interval = setInterval(() => {
-                setTimer(timer - 1);
-            }, 1000);
-            return () => clearInterval(interval);
-        }
-    }, [timer, lastSent]);
-
-    useEffect(() => {
-        if (state.success) {
-            setLastSent(state.data.createdAt);
-            toast.success("A new verification code has been sent to your email address")
-        }
-        if (state.error) {
-            toast.error(state.message, {});
-        }
-    }
-        , [state]);
+//     const [timer, setTimer] = useState(0);
+//     const [lastSent, setLastSent] = useState<Date | null>(createdAt);
 
 
-    return (
-        <form action={formAction}>
-            <input type="hidden" name="type" value={type} />
-            <input type="hidden" name="value" value={value} />
-            <Button type="submit" variant="ghost" className={cn(className)} disabled={isPending || timer > 0}>
-                {isPending ? "Sending..." : "Resend verification code" + (timer > 0 ? ` in ${timer}s` : "")}
-            </Button>
-        </form>
-    )
-}
+//     // enable the button after the timer is done, start the timer based on the enableIn prop
+//     // if the timer is not started yet
+//     useEffect(() => {
+//         if (lastSent && !timer) {
+//             const diff = Math.floor((lastSent.getTime() + 60000 - Date.now()) / 1000);
+//             if (diff > 0) {
+//                 setTimer(diff);
+//             }
+//         }
+//         if (timer > 0) {
+//             const interval = setInterval(() => {
+//                 setTimer(timer - 1);
+//             }, 1000);
+//             return () => clearInterval(interval);
+//         }
+//     }, [timer, lastSent]);
+
+//     useEffect(() => {
+//         if (state.success) {
+//             setLastSent(state.data.createdAt);
+//             toast.success("A new verification code has been sent to your email address")
+//         }
+//         if (state.error) {
+//             toast.error(state.message, {});
+//         }
+//     }
+//         , [state]);
+
+
+//     return (
+//         <form action={formAction}>
+//             <input type="hidden" name="type" value={type} />
+//             <input type="hidden" name="value" value={value} />
+//             <Button type="submit" variant="ghost" className={cn(className)} disabled={isPending || timer > 0}>
+//                 {isPending ? "Sending..." : "Resend verification code" + (timer > 0 ? ` in ${timer}s` : "")}
+//             </Button>
+//         </form>
+//     )
+// }

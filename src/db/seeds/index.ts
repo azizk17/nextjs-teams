@@ -15,7 +15,7 @@ import { sql, getTableName } from 'drizzle-orm';
 import { PgTable } from 'drizzle-orm/pg-core';
 import { exit } from 'process';
 import { seed as userSeed } from './userSeed';
-
+import { seed as initalSeed } from './initalSeed';
 // if (!process.env.DB_SEEDING) {
 //     throw new Error('You must set DB_SEEDING to "true" when running seeds');
 // }
@@ -26,9 +26,11 @@ if (process.env.NODE_ENV !== "development") {
 
 async function main() {
     console.log("Seeding...");
+
     await initalSeed();
 
-    // fake data only for dev 
+
+    //!! fake data only for dev environment
     await userSeed();
     console.log("*** Seeding complete ***");
 }

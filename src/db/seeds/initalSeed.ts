@@ -2,39 +2,39 @@ import { eq } from "drizzle-orm";
 import { permissionsTable, rolePermissionsTable, rolesTable } from "../schema";
 import db from "..";
 
-const roles = [
-    { name: 'Owner', description: 'Full control over the channel and app settings' },
-    { name: 'Admin', description: 'High-level management access' },
-    { name: 'Publisher', description: 'Reviews and approves content' },
-    { name: 'Editor', description: 'Can create and edit videos' },
-    { name: 'Creator', description: 'Can upload raw footage and create video drafts' },
-    { name: 'Moderator', description: 'Manages comments and community engagement' },
-    { name: 'Analyst', description: 'Access to analytics and reporting tools' },
-    { name: 'Viewer', description: 'Can only view content and basic analytics' },
-  ]
-  
-  const permissions = [
-    { name: 'create_content', description: 'Can create new content' },
-    { name: 'edit_content', description: 'Can edit existing content' },
-    { name: 'approve_content', description: 'Can approve content for publishing' },
-    { name: 'publish_content', description: 'Can publish approved content' },
-    { name: 'manage_users', description: 'Can manage user accounts' },
-    { name: 'view_analytics', description: 'Can view analytics data' },
-    { name: 'moderate_comments', description: 'Can moderate user comments' },
-  ]
-  
-  const rolePermissions = [
-    { role: 'Owner', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
-    { role: 'Admin', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
-    { role: 'Publisher', permissions: ['approve_content', 'publish_content', 'view_analytics'] },
-    { role: 'Editor', permissions: ['create_content', 'edit_content'] },
-    { role: 'Creator', permissions: ['create_content'] },
-    { role: 'Moderator', permissions: ['moderate_comments'] },
-    { role: 'Analyst', permissions: ['view_analytics'] },
-    { role: 'Viewer', permissions: [] },
-  ]
+export const roles = [
+  { id: 1, name: 'Owner', description: 'Full control over the channel and app settings' },
+  { id: 2, name: 'Admin', description: 'High-level management access' },
+  { id: 3, name: 'Publisher', description: 'Reviews and approves content' },
+  { id: 4, name: 'Editor', description: 'Can create and edit videos' },
+  { id: 5, name: 'Creator', description: 'Can upload raw footage and create video drafts' },
+  { id: 6, name: 'Moderator', description: 'Manages comments and community engagement' },
+  { id: 7, name: 'Analyst', description: 'Access to analytics and reporting tools' },
+  { id: 8, name: 'Viewer', description: 'Can only view content and basic analytics' },
+]
 
-  export async function seed(){
+export const permissions = [
+  { id: 1, name: 'create_content', description: 'Can create new content' },
+  { id: 2, name: 'edit_content', description: 'Can edit existing content' },
+  { id: 3, name: 'approve_content', description: 'Can approve content for publishing' },
+  { id: 4, name: 'publish_content', description: 'Can publish approved content' },
+  { id: 5, name: 'manage_users', description: 'Can manage user accounts' },
+  { id: 6, name: 'view_analytics', description: 'Can view analytics data' },
+  { id: 7, name: 'moderate_comments', description: 'Can moderate user comments' },
+]
+
+export const rolePermissions = [
+  { role: 'Owner', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
+  { role: 'Admin', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
+  { role: 'Publisher', permissions: ['approve_content', 'publish_content', 'view_analytics'] },
+  { role: 'Editor', permissions: ['create_content', 'edit_content'] },
+  { role: 'Creator', permissions: ['create_content'] },
+  { role: 'Moderator', permissions: ['moderate_comments'] },
+  { role: 'Analyst', permissions: ['view_analytics'] },
+  { role: 'Viewer', permissions: [] },
+]
+
+export async function seed() {
   // Insert roles
   await db.insert(rolesTable).values(roles.map(role => ({
     name: role.name,
@@ -65,7 +65,7 @@ const roles = [
         permissionId: permission[0].id
       }).onConflictDoNothing();
     }
-    }
-    
-    console.log('Role permissions inserted');
+  }
+
+  console.log('Role permissions inserted');
 }

@@ -1,9 +1,11 @@
 import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@/services/authService";
 import { getProjectsByUserId } from "@/services/projectService";
 import { ImageIcon } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 
 interface Project {
@@ -66,6 +68,12 @@ function ProjectList({ title, projects }: { title: string; projects: Project[] }
 }
 
 export default async function Page() {
+
+    const { isAuthenticated } = await auth()
+    if (!isAuthenticated) {
+        return redirect('/signin')
+    }
+
     const userId = "9";
     const ownedProjects = await getProjectsByUserId(userId);
     // TODO: Implement getSharedProjects function in projectService

@@ -47,7 +47,7 @@ export function getMenuList(pathname: string): Group[] {
           submenus: []
         },
         {
-          href: "/settings",
+          href: "/settings/profile",
           label: "Settings",
           active: pathname.includes("/settings"),
           icon: Settings,

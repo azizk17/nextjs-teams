@@ -1,19 +1,26 @@
 import db from "@/db";
-import { Role, rolesTable, User, userRolesTable, usersTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { InsertToken, InsertUser, Role, rolesTable, Token, tokensTable, User, userRolesTable, usersTable } from "@/db/schema";
+import { addHours } from "date-fns";
+import { eq, and } from "drizzle-orm";
 import _ from "lodash";
+import { customAlphabet } from "nanoid";
 
+
+
+
+// Users
+// -------------------------------------------------------------------------------------------------
 /**
  * Retrieves a user by their ID.
  * @param {string} id - The ID of the user to retrieve.
  * @returns {Promise<Record<string, any>>} A promise that resolves to the user data.
  */
-export async function getById(id: string) {
+export async function getUser(id: string) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
     return user;
 }
 // get by id with roles
-export async function getByIdWithRoles(id: string) {
+export async function getUserWithRoles(id: string) {
     // 1. check for authz
     // 2. get user
     // 3. transform to dto
@@ -45,7 +52,7 @@ export async function getByIdWithRoles(id: string) {
  * @param {string} data.password - The password of the user.
  * @returns {Promise<User>} A promise that resolves to the created user.
  */
-export async function create(data: { email: string; password: string }) {
+export async function createUser(data: InsertUser) {
     const [user] = await db.insert(usersTable).values(data).returning();
     return user;
 }
@@ -58,7 +65,7 @@ export async function create(data: { email: string; password: string }) {
  * @param {string} data.password - The new password of the user.
  * @returns {Promise<User>} A promise that resolves to the updated user.
  */
-export async function update(id: string, data: { email: string; password: string }) {
+export async function updateUser(id: string, data: Partial<InsertUser>) {
     const [user] = await db.update(usersTable).set(data).where(eq(usersTable.id, id)).returning();
     return user;
 }
@@ -76,7 +83,7 @@ export async function deleteUser(id: string) {
  * Retrieves all users with their roles.
  * @returns {Promise<any[]>} A promise that resolves to an array of users with their roles.
  */
-export async function getAll() {
+export async function getAllUsers() {
     const users = await db.select().from(usersTable)
         .leftJoin(userRolesTable, eq(usersTable.id, userRolesTable.userId))
         .leftJoin(rolesTable, eq(userRolesTable.roleId, rolesTable.id));
@@ -87,7 +94,7 @@ export async function getAll() {
  * Retrieves all users with their roles using a nested query.
  * @returns {Promise<any[]>} A promise that resolves to an array of users with their roles.
  */
-export async function getAllWithRoles() {
+export async function getAllUsersWithRoles() {
     const result = await db.query.usersTable.findMany({
         limit: 2,
         with: {
@@ -105,7 +112,7 @@ export async function getAllWithRoles() {
  * Retrieves all users with their roles in a flat structure.
  * @returns {Promise<any[]>} A promise that resolves to an array of users with their roles.
  */
-export async function getAllWithRolesFlat() {
+export async function getAllUsersWithRolesFlat() {
     const users = await db
         .select()
         .from(usersTable)
@@ -135,16 +142,76 @@ export async function getUserByUsername(username: string): Promise<User | null> 
     return user;
 }
 
+
+
+// Tokens
+// -------------------------------------------------------------------------------------------------
 /**
- * Generates a verification code for a user.
- * @param {string} userId - The ID of the user.
- * @param {string} email - The email of the user.
- * @param {string} type - The type of verification.
- * @throws {Error} Throws an error as this function is not implemented.
- */
-export async function generateVerificationCode(userId: string, email: string, type: string) {
-    throw new Error("Not implemented");
+ * Generate a verification code
+ * @param userId
+ * @param email
+ * @param type
+ * @returns Promise<string>
+ * */
+export async function generateVerificationCode(userId: string, email: string, type = "email_verification"): Promise<Token> {
+    return await db.transaction(async (tx) => {
+        // Delete existing tokens of the same type for this user
+        await tx.delete(tokensTable)
+            .where(and(
+                eq(tokensTable.userId, userId),
+                eq(tokensTable.type, type as any)
+            ));
+
+        // Generate a new code
+        const code = customAlphabet("1234567890", 8)();
+
+        // Insert the new token
+        const [newToken] = await tx.insert(tokensTable)
+            .values({
+                userId,
+                token: code,
+                type: type as any,
+                expiresAt: addHours(new Date(), 1)
+            })
+            .returning();
+
+        return newToken;
+    });
 }
+/**
+ * Verify a verification code
+ * @param user
+ * @param code
+ * @param type
+ * @returns Promise<boolean>
+ * */
+export async function verifyVerificationCode(userId: string, code: string, type = "email_verification"): Promise<{ isValid: boolean, expiresAt: Date | null, createdAt: Date | null }> {
+    return await db.transaction(async (tx) => {
+        const token = await tx.select().from(tokensTable).where(and(eq(tokensTable.userId, userId), eq(tokensTable.token, code))).limit(1);
+        // no token
+        if (!token || !token[0]) {
+            return { isValid: false, expiresAt: null, createdAt: null };
+        }
+        // expired
+        if (token[0].expiresAt < new Date()) {
+            return { isValid: false, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
+        }
+        // invalid type
+        if (token[0].type !== type) {
+            return { isValid: false, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
+        }
+        // invalid user
+        if (token[0].userId !== userId) {
+            return { isValid: false, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
+        }
+
+        // delete the token
+        // await tx.delete(tokensTable).where(eq(tokensTable.id, token[0].id));
+        return { isValid: true, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
+    }
+    );
+}
+
 
 /**
  * Retrieves a token by its hashed value.
@@ -152,7 +219,8 @@ export async function generateVerificationCode(userId: string, email: string, ty
  * @throws {Error} Throws an error as this function is not implemented.
  */
 export async function getToken(hashed: string) {
-    throw new Error("Not implemented");
+    const [token] = await db.select().from(tokensTable).where(eq(tokensTable.token, hashed));
+    return token;
 }
 
 /**
@@ -164,7 +232,7 @@ export async function getToken(hashed: string) {
  * @param {Date} data.expiresAt - The expiration date of the token.
  * @returns {Promise<any>} A promise that resolves to the created token.
  */
-export async function createToken(data: { token: string; userId: string; type: string; expiresAt: Date }) {
+export async function createToken(data: InsertToken) {
     const [token] = await db.insert(tokensTable).values(data).returning();
     return token;
 }
@@ -177,3 +245,27 @@ export async function createToken(data: { token: string; userId: string; type: s
 export async function verifyEmail(code: string) {
     throw new Error("Not implemented");
 }
+
+
+
+// Roles & Permissions
+// -------------------------------------------------------------------------------------------------
+/**
+ * Retrieves a role by its name.
+ * @param {string} roleName - The name of the role to retrieve.
+ * @returns {Promise<Role | null>} A promise that resolves to the role or null if not found.
+ */
+export async function getRoleByName(roleName: string): Promise<Role | null> {
+    const [role] = await db.select().from(rolesTable).where(eq(rolesTable.name, roleName));
+    return role;
+}
+
+/**
+ * Retrieves a user's roles.
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<Role[]>} A promise that resolves to an array of roles.
+ */
+export async function getUserRoles(userId: string): Promise<Role[]> {
+    const roles = await db.select().from(userRolesTable).where(eq(userRolesTable.userId, userId));
+}
+

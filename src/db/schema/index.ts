@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, primaryKey, integer, boolean, foreignKey, unique, json, serial } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, integer, boolean, unique, json, serial, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
@@ -29,11 +29,12 @@ export const teamProjectsTable = pgTable('team_projects', {
 // Users table
 export const usersTable = pgTable('users', {
     id: text('id').primaryKey().$defaultFn(() => myNanoId(10)),
-    name: text('name').notNull(),
+    name: text('name'),
     avatar: text('avatar'),
     username: text('username').notNull().unique().$defaultFn(() => myNanoId(8)),
-    password: text('password').notNull(),
     email: text('email').notNull().unique(),
+    password: text('password').notNull(),
+    email_verified: boolean('email_verified').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -41,6 +42,18 @@ export const sessionsTable = pgTable("session", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(() => usersTable.id),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull()
+});
+
+export const tokenTypes = pgEnum('type', ['email_verification', 'password_reset', 'phone_verification', "access_token", "refresh_token"]);
+export const tokensTable = pgTable('tokens', {
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(14)),
+    userId: text('user_id').notNull().references(() => usersTable.id),
+    type: tokenTypes("type"),
+    token: text('token').notNull(),
+    // verified: boolean('verified').default(false),
+    expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow()
 });
 
 // Teams table
@@ -229,6 +242,9 @@ export const CreateUserSchema = createInsertSchema(usersTable);
 
 export type Role = typeof rolesTable.$inferSelect;
 export type InsertRole = typeof rolesTable.$inferInsert;
+
+export type Token = typeof tokensTable.$inferSelect;
+export type InsertToken = typeof tokensTable.$inferInsert;
 
 
 

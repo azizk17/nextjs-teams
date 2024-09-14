@@ -5,14 +5,15 @@ import { hash, verify } from "@node-rs/argon2";
 import { cookies } from "next/headers";
 import { lucia, validateRequest } from "@/services/auth/lucia-auth"
 import { RedirectType, redirect } from "next/navigation";
-import { ActionResult } from "@/types";
+import { ActionResponse } from "@/types";
 
 import { generateIdFromEntropySize, } from "lucia";
 import { createHash, randomBytes } from 'crypto';
 import { addHours } from "date-fns";
-import { sendEmail } from "@/lib/email";
+import { sendEmail } from "@/utils/email";
 import { CreateUserSchema } from "@/db/schema";
-import { UserService } from "@/services";
+import { createToken, createUser, generateVerificationCode, getToken, getUser, getUserByEmail, updateUser } from "@/services";
+
 
 
 const resetPasswordSchema = z.object({
@@ -30,8 +31,9 @@ const resetPasswordSchema = z.object({
     path: ["confirm_password"],
 })
 
-//------------------------------------- Sign in -------------------------------------//
-export async function signin(_: any, formData: FormData): Promise<ActionResult> {
+// Sign in
+// --------------------------------------------------------------------------------
+export async function signin(_: any, formData: FormData): Promise<ActionResponse> {
     const validated = CreateUserSchema.pick({ email: true, password: true }).safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
@@ -41,9 +43,8 @@ export async function signin(_: any, formData: FormData): Promise<ActionResult> 
         return { success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'Invalid form data', }
     }
     try {
-        const userService = new UserService();
         // exsiting user check
-        const user = await userService.getByEmail(validated.data.email);
+        const user = await getUserByEmail(validated.data.email);
         // if user does not exist
         if (!user) {
             return { success: false, status: 400, message: "Incorrect username or password", };
@@ -60,15 +61,17 @@ export async function signin(_: any, formData: FormData): Promise<ActionResult> 
     } catch (error) {
         return { success: false, status: 400, message: "Incorrect username or password", };
     }
-    return redirect("/dashboard");
+    return redirect("/");
 }
 
-//------------------------------------- Sign up -------------------------------------//
-export async function signup(_: any, formData: FormData): Promise<ActionResult> {
+// Sign up
+// --------------------------------------------------------------------------------
+export async function signup(_: any, formData: FormData): Promise<ActionResponse> {
 
-    const validated = CreateUserSchema.pick({ email: true, password: true }).safeParse({
+    const validated = CreateUserSchema.pick({ email: true, password: true, name: true }).safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
+        name: formData.get('name'),
     })
 
     if (!validated.success) {
@@ -77,9 +80,8 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
         }
     }
     try {
-        const userService = new UserService();
         // exsiting user check 
-        const isExsiting = await userService.getByEmail(validated.data.email);
+        const isExsiting = await getUserByEmail(validated.data.email);
         if (isExsiting) {
             return { success: false, status: 400, message: "User already exists", };
         }
@@ -91,12 +93,12 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
             parallelism: 1
         });
 
-        const user = await userService.create({ email: validated.data.email, password: passwordHash });
+        const user = await createUser({ email: validated.data.email, password: passwordHash, name: validated.data.name });
         const session = await lucia.createSession(user?.id, {});
         const sessionCookie = lucia.createSessionCookie(session.id);
         cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 
-        const verificationCode = await userService.generateVerificationCode(user?.id, user?.email, "email_verification");
+        const verificationCode = await generateVerificationCode(user?.id, user?.email, "email_verification");
         // send email verification email
         // mocking for now
         await sendEmail({
@@ -107,11 +109,48 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
     } catch (error) {
         return { success: false, status: 400, message: "Error creating user", };
     }
-    return redirect("/dashboard");
+    return redirect("/");
 }
 
-//------------------------------------- Send reset password -------------------------------------//
-export async function sendResetPassword(_: any, formData: FormData): Promise<ActionResult> {
+// Send verification code
+// --------------------------------------------------------------------------------
+export async function sendOtp(_: any, formData: FormData): Promise<ActionResponse> {
+    const validated = CreateUserSchema.pick({ email: true }).safeParse({
+        email: formData.get('email'),
+    })
+    if (!validated.success) {
+        return {
+            success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
+        }
+    }
+    redirect(`/reset-p?key=${validated.data.email}&step=otp`)
+    return { success: true, message: "Verification code sent", }
+    // exsiting user check 
+    // const existingUser = await getUserByEmail(validated.data.email);
+
+
+}
+export async function verifyOtp(_: any, formData: FormData): Promise<ActionResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const validated = z.object({
+        otp: z.string().min(6, {
+            message: "Invalid code",
+        }),
+    }).safeParse({
+        otp: formData.get('otp'),
+    })
+    if (!validated.success) {
+        return {
+            success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
+        }
+    }
+    return { success: true, message: "OTP verified successfully", }
+    redirect(`/reset-p?key=${validated.data.otp}&step=password`)
+}
+
+// Send reset password
+// --------------------------------------------------------------------------------
+export async function sendResetPassword(_: any, formData: FormData): Promise<ActionResponse> {
     const validated = CreateUserSchema.pick({ email: true }).safeParse({
         email: formData.get('email'),
     })
@@ -121,15 +160,14 @@ export async function sendResetPassword(_: any, formData: FormData): Promise<Act
             success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
         }
     }
-    const userService = new UserService();
     // exsiting user check 
-    const existingUser = await userService.getByEmail(validated.data.email);
+    const existingUser = await getUserByEmail(validated.data.email);
 
     if (!existingUser) return { success: false, status: 404, message: "This email is not registered" }
 
     const id = generateIdFromEntropySize(25); // 40 character
     const hash = await createHash('sha256').update(id).digest('hex');
-    const createdToken = await userService.createToken({
+    const createdToken = await createToken({
         token: hash,
         //@ts-ignore
         userId: existingUser?.id,
@@ -147,8 +185,9 @@ export async function sendResetPassword(_: any, formData: FormData): Promise<Act
     return { success: true, message: "Password reset email sent", }
 }
 
-//------------------------------------- Reset password -------------------------------------//
-export async function resetPassword(_: any, formData: FormData): Promise<ActionResult> {
+// Reset password
+// --------------------------------------------------------------------------------
+export async function resetPassword(_: any, formData: FormData): Promise<ActionResponse> {
     const validated = resetPasswordSchema.safeParse({
         new_password: formData.get('new_password'),
         confirm_password: formData.get('confirm_password'),
@@ -160,16 +199,15 @@ export async function resetPassword(_: any, formData: FormData): Promise<ActionR
     }
 
     try {
-        const userService = new UserService();
         // validate token
         const hashed = await createHash('sha256').update(validated.data.token).digest('hex');
-        const token = await userService.getToken(hashed);
+        const token = await getToken(hashed);
         // check expiration
         if (!token || new Date(token.expiresAt) < new Date()) {
             return { success: false, status: 400, message: "Invalid token", };
         }
         // exsiting user check 
-        const user = await userService.getById(token.userId)
+        const user = await getUser(token.userId)
         if (!user) {
             return {
                 success: false, status: 400, message: "User does not exist",
@@ -183,7 +221,7 @@ export async function resetPassword(_: any, formData: FormData): Promise<ActionR
             parallelism: 1
         });
         // update password
-        const updated = await userService.update(user.id, { password: updatedPassword });
+        const updated = await updateUser(user.id, { password: updatedPassword });
         if (!updated) {
             return { success: false, status: 400, message: "Error updating password", };
         }
@@ -191,26 +229,26 @@ export async function resetPassword(_: any, formData: FormData): Promise<ActionR
     } catch (error) {
         return { success: false, status: 400, message: "Error resetting password", };
     }
-    redirect("/signin", RedirectType.replace)
-
+    return redirect("/signin", RedirectType.replace);
 }
 
-//------------------------------------- Sign out -------------------------------------//
-export async function signout(): Promise<ActionResult> {
+// Sign out
+// --------------------------------------------------------------------------------
+export async function signout(): Promise<ActionResponse> {
     const { session } = await validateRequest();
     if (!session) {
-        redirect("/signin", RedirectType.replace)
+        return redirect("/signin", RedirectType.replace);
     }
     await lucia.invalidateSession(session.id);
     const sessionCookie = lucia.createBlankSessionCookie();
     cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
-    return redirect("/", RedirectType.replace)
+    return redirect("/", RedirectType.replace);
 }
 
-// ------------------------------------- Resend verification code -------------------------------------//
-// 
+// Resend verification code
+// --------------------------------------------------------------------------------
 // TODO: Refactor to use a single function for generating verification code for email and phone
-export async function resendVerificationCode(): Promise<ActionResult> {
+export async function resendVerificationCode(): Promise<ActionResponse> {
     // sleep for 2 seconds to simulate a network request
     await new Promise((resolve) => setTimeout(resolve, 2000))
     const { user } = await validateRequest();
@@ -219,11 +257,10 @@ export async function resendVerificationCode(): Promise<ActionResult> {
     }
     // TODO: Prevent code generation if a code was generated in the last 5 minutes
 
-    if (user.email_verified) {
+    if (user.emailVerified) {
         return { success: false, message: "Email already verified", status: 400, };
     }
-    const userService = new UserService();
-    const { token: code, createdAt } = await userService.generateVerificationCode(user.id, user.email, "email_verification");
+    const { token: code, createdAt } = await generateVerificationCode(user.id, user.email, "email_verification");
     // send email verification email
     await sendEmail({
         to: user.email,
