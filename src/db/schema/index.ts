@@ -46,14 +46,17 @@ export const sessionsTable = pgTable("session", {
 
 export const tokenTypes = pgEnum('type', ['email_verification', 'password_reset', 'phone_verification', "access_token", "refresh_token"]);
 export const tokensTable = pgTable('tokens', {
-    id: text('id').primaryKey().$defaultFn(() => myNanoId(14)),
+    id: text('id').primaryKey().$defaultFn(() => myNanoId(32)),
     userId: text('user_id').notNull().references(() => usersTable.id),
     type: tokenTypes("type"),
     token: text('token').notNull(),
-    // verified: boolean('verified').default(false),
-    expiresAt: timestamp('expires_at').notNull(),
+    verified: boolean('verified').default(false),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    // If the token is invalidated
+    isInvalid: boolean('is_invalid').default(false),
     createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow()
+    updatedAt: timestamp('updated_at').defaultNow(),
+
 });
 
 // Teams table

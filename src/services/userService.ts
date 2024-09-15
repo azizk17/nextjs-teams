@@ -1,7 +1,7 @@
 import db from "@/db";
 import { InsertToken, InsertUser, Role, rolesTable, Token, tokensTable, User, userRolesTable, usersTable } from "@/db/schema";
 import { addHours } from "date-fns";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import _ from "lodash";
 import { customAlphabet } from "nanoid";
 
@@ -155,15 +155,15 @@ export async function getUserByUsername(username: string): Promise<User | null> 
  * */
 export async function generateVerificationCode(userId: string, email: string, type = "email_verification"): Promise<Token> {
     return await db.transaction(async (tx) => {
-        // Delete existing tokens of the same type for this user
-        await tx.delete(tokensTable)
+        // Disable existing tokens of the same type for this user
+        await tx.update(tokensTable)
+            .set({ isInvalid: true })
             .where(and(
                 eq(tokensTable.userId, userId),
                 eq(tokensTable.type, type as any)
             ));
-
         // Generate a new code
-        const code = customAlphabet("1234567890", 8)();
+        const code = customAlphabet("1234567890", 6)();
 
         // Insert the new token
         const [newToken] = await tx.insert(tokensTable)
@@ -185,9 +185,9 @@ export async function generateVerificationCode(userId: string, email: string, ty
  * @param type
  * @returns Promise<boolean>
  * */
-export async function verifyVerificationCode(userId: string, code: string, type = "email_verification"): Promise<{ isValid: boolean, expiresAt: Date | null, createdAt: Date | null }> {
+export async function verifyVerificationCode(tokenId: string, code: string, type = "email_verification"): Promise<{ isValid: boolean, expiresAt: Date | null, createdAt: Date | null }> {
     return await db.transaction(async (tx) => {
-        const token = await tx.select().from(tokensTable).where(and(eq(tokensTable.userId, userId), eq(tokensTable.token, code))).limit(1);
+        const token = await tx.select().from(tokensTable).where(and(eq(tokensTable.id, tokenId), eq(tokensTable.token, code))).limit(1);
         // no token
         if (!token || !token[0]) {
             return { isValid: false, expiresAt: null, createdAt: null };
@@ -200,12 +200,8 @@ export async function verifyVerificationCode(userId: string, code: string, type 
         if (token[0].type !== type) {
             return { isValid: false, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
         }
-        // invalid user
-        if (token[0].userId !== userId) {
-            return { isValid: false, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
-        }
-
         // delete the token
+        await tx.update(tokensTable).set({ verified: true }).where(eq(tokensTable.id, token[0].id));
         // await tx.delete(tokensTable).where(eq(tokensTable.id, token[0].id));
         return { isValid: true, expiresAt: token[0].expiresAt, createdAt: token[0].createdAt };
     }
@@ -215,11 +211,35 @@ export async function verifyVerificationCode(userId: string, code: string, type 
 
 /**
  * Retrieves a token by its hashed value.
+ * @param {string} id - The id of the token.
+ * @throws {Error} Throws an error as this function is not implemented.
+ */
+export async function getTokenById(id: string) {
+    const [token] = await db.select().from(tokensTable).where(eq(tokensTable.id, id));
+    return token;
+}
+/**
+ * Retrieves a token by its hashed value.
  * @param {string} hashed - The hashed token.
  * @throws {Error} Throws an error as this function is not implemented.
  */
-export async function getToken(hashed: string) {
-    const [token] = await db.select().from(tokensTable).where(eq(tokensTable.token, hashed));
+export async function getTokenByHashedToken(hashedToken: string) {
+    const [token] = await db.select().from(tokensTable).where(eq(tokensTable.token, hashedToken));
+    return token;
+}
+
+/**
+ * Retrieves the most recent token by its user ID and type.
+ * @param {string} userId - The ID of the user.
+ * @param {string} type - The type of the token.
+ * @returns {Promise<Token | null>} A promise that resolves to the most recent token or null if not found.
+ */
+export async function getLastTokenByUserIdAndType(userId: string, type: "email_verification" | "password_reset" | "phone_verification"): Promise<Token | null> {
+    const [token] = await db.select()
+        .from(tokensTable)
+        .where(and(eq(tokensTable.userId, userId), eq(tokensTable.type, type)))
+        .orderBy(desc(tokensTable.createdAt))
+        .limit(1);
     return token;
 }
 
@@ -237,6 +257,22 @@ export async function createToken(data: InsertToken) {
     return token;
 }
 
+/**
+ * Deletes a token by its ID.
+ * @param {string} id - The ID of the token to delete.
+ * @returns {Promise<void>}
+ */
+export async function deleteToken(id: string) {
+    await db.delete(tokensTable).where(eq(tokensTable.id, id));
+}
+/**
+ * Invalidates a token by its ID.
+ * @param {string} id - The ID of the token to invalidate.
+ * @returns {Promise<void>}
+ */
+export async function invalidateToken(id: string) {
+    await db.update(tokensTable).set({ isInvalid: true }).where(eq(tokensTable.id, id));
+}
 /**
  * Verifies a user's email using a verification code.
  * @param {string} code - The verification code.

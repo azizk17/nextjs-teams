@@ -7,12 +7,11 @@ import { lucia, validateRequest } from "@/services/auth/lucia-auth"
 import { RedirectType, redirect } from "next/navigation";
 import { ActionResponse } from "@/types";
 
-import { generateIdFromEntropySize, } from "lucia";
-import { createHash, randomBytes } from 'crypto';
-import { addHours } from "date-fns";
 import { sendEmail } from "@/utils/email";
-import { CreateUserSchema } from "@/db/schema";
-import { createToken, createUser, generateVerificationCode, getToken, getUser, getUserByEmail, updateUser } from "@/services";
+import { CreateUserSchema, Token, User } from "@/db/schema";
+import {
+    createUser, generateVerificationCode, getLastTokenByUserIdAndType, getTokenById, getUser, getUserByEmail, invalidateToken, updateUser, verifyVerificationCode
+} from "@/services/userService";
 
 
 
@@ -115,74 +114,120 @@ export async function signup(_: any, formData: FormData): Promise<ActionResponse
 // Send verification code
 // --------------------------------------------------------------------------------
 export async function sendOtp(_: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateUserSchema.pick({ email: true }).safeParse({
+    const validated = z.object({
+        email: z.string(),
+    }).safeParse({
         email: formData.get('email'),
     })
+
     if (!validated.success) {
+        console.log(validated.error.flatten().fieldErrors)
         return {
             success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
         }
     }
-    redirect(`/reset-p?key=${validated.data.email}&step=otp`)
-    return { success: true, message: "Verification code sent", }
+
     // exsiting user check 
-    // const existingUser = await getUserByEmail(validated.data.email);
+    const existingUser = await getUserByEmail(validated.data.email);
+    if (!existingUser) {
+        return { success: false, status: 404, message: "No account found with this email address" };
+    }
 
+    // check if the user has a password reset token in the last 3 minutes
+    const lastToken = await getLastTokenByUserIdAndType(existingUser.id, "password_reset");
+    if (lastToken) {
+        const now = new Date();
+        const lastTokenDate = new Date(lastToken.createdAt || "");
+        const timeDifference = now.getTime() - lastTokenDate.getTime();
+        const minutesDifference = timeDifference / (1000 * 60);
+        if (minutesDifference < 3) {
+            return { success: false, status: 400, message: "Please wait 3 minutes before requesting another code" }
+        }
+    }
 
+    const { token, id, createdAt } = await generateVerificationCode(existingUser.id, existingUser.email, "password_reset");
+    // send email verification email
+    await sendEmail({
+        to: existingUser.email,
+        subject: "Password reset",
+        template: `Your password reset code is ${token}`
+    });
+    return { success: true, message: "Verification code sent", data: { id, email: existingUser.email, createdAt: createdAt } }
 }
+
+// Resend verification code
+// --------------------------------------------------------------------------------
+export async function resendOtp(_: any, formData: FormData): Promise<ActionResponse> {
+    const validated = z.object({
+        token: z.string().min(8, {
+            message: "Invalid token",
+        }),
+    }).safeParse({
+        token: formData.get('token'),
+    })
+    if (!validated.success) {
+        console.log(validated.error.flatten().fieldErrors)
+        return {
+            success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
+        }
+    }
+    const { id: prevId, userId, createdAt: prevCreatedAt } = await getTokenById(validated.data.token);
+    if (!prevId) {
+        return { success: false, status: 400, message: "Invalid token" }
+    }
+
+    // check if the user has a password reset token in the last 3 minutes
+    if (prevId && prevCreatedAt) {
+        const now = new Date();
+        const lastTokenDate = new Date(prevCreatedAt);
+        const timeDifference = now.getTime() - lastTokenDate.getTime();
+        const minutesDifference = timeDifference / (1000 * 60);
+        if (minutesDifference < 3) {
+            return { success: false, status: 400, message: "Please wait 3 minutes before requesting another code" }
+        }
+    }
+
+    const user = await getUser(userId);
+    if (!user) {
+        return { success: false, status: 400, message: "User does not exist" }
+    }
+    const { id: newId, token, createdAt: newCreatedAt } = await generateVerificationCode(userId, user.email, "password_reset");
+    await sendEmail({
+        to: user.email,
+        subject: "Password reset",
+        template: `Your password reset code is ${token}`
+    });
+    return { success: true, message: "Verification code sent", data: { id: newId, userId, createdAt: newCreatedAt } }
+}
+
+// Verify OTP
+// --------------------------------------------------------------------------------
 export async function verifyOtp(_: any, formData: FormData): Promise<ActionResponse> {
     await new Promise((resolve) => setTimeout(resolve, 2000))
     const validated = z.object({
         otp: z.string().min(6, {
             message: "Invalid code",
         }),
+        token: z.string().min(8, {
+            message: "Invalid token",
+        }),
     }).safeParse({
         otp: formData.get('otp'),
+        token: formData.get('token'),
     })
     if (!validated.success) {
+        console.log(validated.error.flatten().fieldErrors)
+        console.log(validated.data)
         return {
             success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
         }
     }
-    return { success: true, message: "OTP verified successfully", }
-    redirect(`/reset-p?key=${validated.data.otp}&step=password`)
-}
-
-// Send reset password
-// --------------------------------------------------------------------------------
-export async function sendResetPassword(_: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateUserSchema.pick({ email: true }).safeParse({
-        email: formData.get('email'),
-    })
-
-    if (!validated.success) {
-        return {
-            success: false, status: 400, errors: validated.error.flatten().fieldErrors, message: 'You must provide a valid information',
-        }
+    const { isValid } = await verifyVerificationCode(validated.data.token, validated.data.otp, "password_reset");
+    if (!isValid) {
+        return { success: false, status: 400, message: "Invalid code" }
     }
-    // exsiting user check 
-    const existingUser = await getUserByEmail(validated.data.email);
 
-    if (!existingUser) return { success: false, status: 404, message: "This email is not registered" }
-
-    const id = generateIdFromEntropySize(25); // 40 character
-    const hash = await createHash('sha256').update(id).digest('hex');
-    const createdToken = await createToken({
-        token: hash,
-        //@ts-ignore
-        userId: existingUser?.id,
-        type: "password_reset",
-        expiresAt: addHours(new Date(), 3),
-    });
-    // send password reset email
-    // mocking for now
-    await sendEmail({
-        to: existingUser.email,
-        subject: "Password reset",
-        template: `Click here to reset your password: ${process.env.NEXT_PUBLIC_BASE_URL}/reset-password/${id}`,
-    });
-
-    return { success: true, message: "Password reset email sent", }
+    return { success: true, message: "OTP verified successfully", data: { id: validated.data.token } }
 }
 
 // Reset password
@@ -200,11 +245,17 @@ export async function resetPassword(_: any, formData: FormData): Promise<ActionR
 
     try {
         // validate token
-        const hashed = await createHash('sha256').update(validated.data.token).digest('hex');
-        const token = await getToken(hashed);
+        // const hashed = await createHash('sha256').update(validated.data.token).digest('hex');
+        const token = await getTokenById(validated.data.token);
         // check expiration
         if (!token || new Date(token.expiresAt) < new Date()) {
             return { success: false, status: 400, message: "Invalid token", };
+        }
+        if (token.type !== "password_reset") {
+            return { success: false, status: 400, message: "Invalid token", };
+        }
+        if (!token.verified || token.isInvalid) {
+            return { success: false, status: 400, message: "Token is invalid", };
         }
         // exsiting user check 
         const user = await getUser(token.userId)
@@ -226,6 +277,7 @@ export async function resetPassword(_: any, formData: FormData): Promise<ActionR
             return { success: false, status: 400, message: "Error updating password", };
         }
         // invalidate token
+        await invalidateToken(token.id);
     } catch (error) {
         return { success: false, status: 400, message: "Error resetting password", };
     }
@@ -243,30 +295,4 @@ export async function signout(): Promise<ActionResponse> {
     const sessionCookie = lucia.createBlankSessionCookie();
     cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
     return redirect("/", RedirectType.replace);
-}
-
-// Resend verification code
-// --------------------------------------------------------------------------------
-// TODO: Refactor to use a single function for generating verification code for email and phone
-export async function resendVerificationCode(): Promise<ActionResponse> {
-    // sleep for 2 seconds to simulate a network request
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    const { user } = await validateRequest();
-    if (!user) {
-        return { success: false, message: "No active session", status: 400, };
-    }
-    // TODO: Prevent code generation if a code was generated in the last 5 minutes
-
-    if (user.emailVerified) {
-        return { success: false, message: "Email already verified", status: 400, };
-    }
-    const { token: code, createdAt } = await generateVerificationCode(user.id, user.email, "email_verification");
-    // send email verification email
-    await sendEmail({
-        to: user.email,
-        subject: "Email verification",
-        template: `Click here to verify your email: ${process.env.NEXT_PUBLIC_BASE_URL}/verify-email/${code}`,
-    });
-
-    return { success: true, message: "Verification code sent", data: { createdAt: createdAt } }
 }

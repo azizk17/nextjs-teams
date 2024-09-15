@@ -4,16 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { startTransition, useActionState, useEffect, useState } from "react";
-import { signin, signup, resetPassword, signout, resendVerificationCode, sendOtp, verifyOtp } from "./_actions";
+import { signin, signup, resetPassword, signout, sendOtp, verifyOtp, resendOtp } from "./_actions";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, CheckCircle, Info, InfoIcon, Loader, Loader2, LogOutIcon } from "lucide-react";
+import { InfoIcon, Loader, Loader2, LogOutIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter, useSearchParams } from "next/navigation";
-import AnimateIn from "@/components/animate-in";
 import { toast } from "sonner";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
+import { Token } from "@/db/schema";
 
 
 /**
@@ -62,7 +62,6 @@ export function SignInForm() {
         </form>
     )
 }
-
 /**
  * 
  * Sign up form component
@@ -126,174 +125,223 @@ export function SignUpForm() {
         </div>
     )
 }
-
 /**
  * 
- * Send verification code form component
+ * Password reset request form component
  * 
  */
-export function PasswordResetForm({ tokenKey }: { tokenKey: string }) {
-    const [stateSendOtp, formActionSendOtp, isPendingSendOtp] = useActionState(sendOtp, null);
-    const [verifyOtpState, verifyOtpAction, isVerifyOtpPending] = useActionState(verifyOtp, null);
-    const [resetPasswordState, resetPasswordAction, isResetPasswordPending] = useActionState(resetPassword, null);
-
+export function PasswordResetRequestForm() {
+    const [state, formAction, isPending] = useActionState(sendOtp, {});
+    const router = useRouter();
+    useEffect(() => {
+        if (state.success) {
+            toast.success("A password reset email has been sent to your email address")
+            router.push(`/reset-p?token=${state.data.id}&otp=true`)
+        }
+        if (state.success === false) {
+            toast.error(state.message)
+        }
+    }, [state])
+    return (
+        <form action={formAction} className="w-full max-w-lg">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reset Password</CardTitle>
+                    <CardDescription>Enter your email to receive a password reset email</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+                    </div>
+                    <Button type="submit" className="w-full">
+                        {isPending ? "Sending..." : "Send Password Reset Email"}
+                    </Button>
+                </CardContent>
+                <CardFooter>
+                    <Link href="/signin" className="text-sm text-muted-foreground hover:underline">
+                        Back to Sign In
+                    </Link>
+                </CardFooter>
+            </Card>
+        </form>
+    )
+}
+/**
+ * 
+ * OTP verification form component
+ * 
+ */
+export function OtpVerificationForm({ token }: { token: Token }) {
+    const [state, formAction, isPending] = useActionState(verifyOtp, {});
+    const [resendOtpState, formActionResendOtp, isPendingResendOtp] = useActionState(resendOtp, null);
+    const [countdown, setCountdown] = useState(0);
     const searchParams = useSearchParams();
-    const step = searchParams.get('step') || 'email';
-    const email = searchParams.get('email') || '';
+    const tokenId = searchParams.get('token') || '';
+    const router = useRouter();
 
     const handleOtpComplete = (otp: string) => {
         const formData = new FormData();
         formData.append('otp', otp);
+        formData.append('token', tokenId);
         startTransition(() => {
-            verifyOtpAction(formData);
+            formAction(formData);
         });
     };
 
     useEffect(() => {
-        if (stateSendOtp?.success) {
-            toast("A verification code has been sent to your email address")
+        if (state.success) {
+
+            toast.success("OTP verified successfully")
+            router.replace(`/reset-p?token=${tokenId}`)
         }
-        if (stateSendOtp?.success === false) {
-            toast.error(stateSendOtp.message)
+        if (state.success === false) {
+            toast.error(state.message)
         }
-    }, [stateSendOtp]);
+    }, [state])
+
+
+
+    // resend otp
+    useEffect(() => {
+        if (resendOtpState?.success) {
+            toast.success("A new verification code has been sent to your email address")
+            router.replace(`/reset-p?token=${resendOtpState.data.id}&otp=true`)
+        }
+        if (resendOtpState?.success === false) {
+            toast.error(resendOtpState.message)
+        }
+    }, [resendOtpState])
 
     useEffect(() => {
-        if (verifyOtpState?.success) {
-            toast("OTP verified successfully")
+        if (token.createdAt) {
+            const tokenCreationTime = new Date(token.createdAt).getTime();
+            const currentTime = Date.now();
+            const elapsedSeconds = Math.floor((currentTime - tokenCreationTime) / 1000);
+            const remainingSeconds = Math.max(180 - elapsedSeconds, 0);
+            setCountdown(remainingSeconds);
         }
-    }, [verifyOtpState?.success]);
+    }, [token.createdAt]);
 
+    // countdown timer
+    useEffect(() => {
+        if (countdown > 0) {
+            const interval = setInterval(() => {
+                setCountdown(countdown - 1);
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [countdown])
     return (
         <Card className="w-full max-w-lg">
             <CardHeader>
-                <CardTitle>{
-                    step === 'email' ? 'Reset Password' :
-                        step === 'otp' ? 'Verify Code' :
-                            'Set New Password'
-                }</CardTitle>
-                <CardDescription>{
-                    step === 'email' ? 'Enter your email to receive a verification code' :
-                        step === 'otp' ? 'Enter the 6-digit code sent to your email' :
-                            'Choose a new password for your account'
-                }</CardDescription>
+                <CardDescription>
+                    {countdown}
+                </CardDescription>
+                <CardTitle>Verify Code</CardTitle>
+                <CardDescription>Enter the 6-digit code sent to your email</CardDescription>
             </CardHeader>
             <CardContent>
-                {step === 'email' && (
-                    <form action={formActionSendOtp} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                name="email"
-                                type="email"
-                                placeholder="m@example.com"
-                                required
-                                defaultValue={email}
-                            />
-                        </div>
-                        <Button type="submit" className="w-full">
-                            {isPendingSendOtp ? "Sending..." : "Send Verification Code"}
-                        </Button>
-                    </form>
-                )}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-center">
+                        {isPending && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+                                <Loader2 className="w-8 h-8 animate-spin" />
+                            </div>
+                        )}
+                        <InputOTP maxLength={6} onComplete={handleOtpComplete} disabled={isPending}>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={0} className="w-12 h-12 text-lg" />
+                                <InputOTPSlot index={1} className="w-12 h-12 text-lg" />
+                                <InputOTPSlot index={2} className="w-12 h-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPSeparator />
+                            <InputOTPGroup>
+                                <InputOTPSlot index={3} className="w-12 h-12 text-lg" />
+                                <InputOTPSlot index={4} className="w-12 h-12 text-lg" />
+                                <InputOTPSlot index={5} className="w-12 h-12 text-lg" />
+                            </InputOTPGroup>
+                        </InputOTP>
+                    </div>
+                    <div className="flex justify-center">
 
-                {step === 'otp' && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-center">
-                            {isVerifyOtpPending && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-                                    <Loader2 className="w-8 h-8 animate-spin" />
-                                </div>
-                            )}
-                            <InputOTP maxLength={6} onComplete={handleOtpComplete} disabled={isVerifyOtpPending}>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={0} className="w-12 h-12 text-lg" />
-                                    <InputOTPSlot index={1} className="w-12 h-12 text-lg" />
-                                    <InputOTPSlot index={2} className="w-12 h-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPSeparator />
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={3} className="w-12 h-12 text-lg" />
-                                    <InputOTPSlot index={4} className="w-12 h-12 text-lg" />
-                                    <InputOTPSlot index={5} className="w-12 h-12 text-lg" />
-                                </InputOTPGroup>
-                            </InputOTP>
-                        </div>
                         <Button
                             variant="link"
-                            className="w-full"
+                            className=""
+                            disabled={isPending || countdown > 0 || isPendingResendOtp}
                             onClick={() => {
-                                // Implement logic to resend OTP
-                                toast("Resending verification code...");
+                                const formData = new FormData();
+                                formData.append('token', tokenId);
+                                startTransition(() => {
+                                    formActionResendOtp(formData);
+                                });
                             }}
                         >
-                            Resend verification code
+                            {countdown > 0
+                                ? `Resend in ${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`
+                                : "Resend verification code"}
                         </Button>
                     </div>
-                )}
-
-                {step === 'password' && (
-                    <form action={resetPasswordAction} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="newPassword">New Password</Label>
-                            <Input
-                                id="newPassword"
-                                name="newPassword"
-                                type="password"
-                                placeholder="Enter new password"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirm Password</Label>
-                            <Input
-                                id="confirmPassword"
-                                name="confirmPassword"
-                                type="password"
-                                placeholder="Confirm new password"
-                                required
-                            />
-                        </div>
-                        <Button type="submit" className="w-full">
-                            {isResetPasswordPending ? "Resetting..." : "Reset Password"}
-                        </Button>
-                    </form>
-                )}
+                </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-                {step !== 'email' && (
-                    <Button
-                        variant="ghost"
-                        onClick={() => {
-                            // Implement logic to go back to previous step
-                        }}
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
-                )}
-                <Link href="/signin" className="text-sm text-muted-foreground hover:underline">
-                    Back to Sign In
-                </Link>
-            </CardFooter>
         </Card>
+
     )
 }
+/**
+ * 
+ * New password form component
+ * 
+ */
+export function NewPasswordForm() {
+    const [state, formAction, isPending] = useActionState(resetPassword, {});
+    const searchParams = useSearchParams();
+    const tokenId = searchParams.get('token') || '';
 
-
-// @deprecated
-export function SignOutForm({ trigger, loader }: { trigger: React.ReactNode, loader: React.ReactNode }) {
-    const [state, formAction, isPending] = useActionState(signout, {
-        error: null
-    });
+    useEffect(() => {
+        // on success redirect to signin
+        if (state.success === false) {
+            toast.error(state.message)
+        }
+    }, [state])
     return (
-        <form action={formAction}>
-            {isPending ? loader : trigger}
-        </form>
+        <form action={formAction} className="w-full max-w-lg">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reset Password</CardTitle>
+                    <CardDescription>Enter your new password</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
 
+                    <input type="hidden" name="token" value={tokenId} />
+                    <div className="space-y-2">
+                        <Label htmlFor="new_password">New Password</Label>
+                        <Input
+                            id="new_password"
+                            name="new_password"
+                            type="password"
+                            placeholder="Enter new password"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirm_password">Confirm Password</Label>
+                        <Input
+                            id="confirm_password"
+                            name="confirm_password"
+                            type="password"
+                            placeholder="Confirm new password"
+                            required
+                        />
+                    </div>
+                    <Button type="submit" className="w-full">
+                        {isPending ? "Resetting..." : "Reset Password"}
+                    </Button>
+                </CardContent>
+            </Card>
+        </form>
     )
 }
-
 /**
  * 
  * Sign out button component
@@ -320,57 +368,3 @@ export function SignOutButton({ className }: { className?: string }) {
         </form>
     )
 }
-// /**
-//  * 
-//  * Resend verification code action component
-//  * 
-//  */
-// export function ResendVerificationCode({ type, value, label, className, createdAt }: {
-//     type: string,
-//     value: string, label: string, className: string, createdAt: Date | null
-// }) {
-//     const [state, formAction, isPending] = useActionState(resendVerificationCode, {});
-
-//     const [timer, setTimer] = useState(0);
-//     const [lastSent, setLastSent] = useState<Date | null>(createdAt);
-
-
-//     // enable the button after the timer is done, start the timer based on the enableIn prop
-//     // if the timer is not started yet
-//     useEffect(() => {
-//         if (lastSent && !timer) {
-//             const diff = Math.floor((lastSent.getTime() + 60000 - Date.now()) / 1000);
-//             if (diff > 0) {
-//                 setTimer(diff);
-//             }
-//         }
-//         if (timer > 0) {
-//             const interval = setInterval(() => {
-//                 setTimer(timer - 1);
-//             }, 1000);
-//             return () => clearInterval(interval);
-//         }
-//     }, [timer, lastSent]);
-
-//     useEffect(() => {
-//         if (state.success) {
-//             setLastSent(state.data.createdAt);
-//             toast.success("A new verification code has been sent to your email address")
-//         }
-//         if (state.error) {
-//             toast.error(state.message, {});
-//         }
-//     }
-//         , [state]);
-
-
-//     return (
-//         <form action={formAction}>
-//             <input type="hidden" name="type" value={type} />
-//             <input type="hidden" name="value" value={value} />
-//             <Button type="submit" variant="ghost" className={cn(className)} disabled={isPending || timer > 0}>
-//                 {isPending ? "Sending..." : "Resend verification code" + (timer > 0 ? ` in ${timer}s` : "")}
-//             </Button>
-//         </form>
-//     )
-// }
