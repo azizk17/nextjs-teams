@@ -22,6 +22,13 @@
       "when": 1726381857862,
       "tag": "0002_sour_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1726473848587,
+      "tag": "0003_mute_alex_power",
+      "breakpoints": true
     }
   ]
 }
