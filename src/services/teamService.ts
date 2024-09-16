@@ -1,6 +1,6 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
 import db from '@/db';
-import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable, invitationsTable, teamInvitationsTable, InsertTeamInvitation } from '@/db/schema';
+import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable, invitationsTable, teamInvitationsTable, InsertTeamInvitation, InsertTeam } from '@/db/schema';
 import { NotFoundError, ConflictError } from '@/utils/errors';
 
 export async function getTeam(id: string) {
@@ -13,7 +13,7 @@ export async function createTeam(data: { name: string; avatar?: string; descript
     return team;
 }
 
-export async function updateTeam(id: string, data: Partial<{ name: string; avatar?: string; description?: string }>) {
+export async function updateTeam(id: string, data: Partial<InsertTeam>) {
     const [updatedTeam] = await db.update(teamsTable).set(data).where(eq(teamsTable.id, id)).returning();
     if (!updatedTeam) throw new NotFoundError('Team not found');
     return updatedTeam;

@@ -14,6 +14,7 @@ import {
     HoverCardContent,
     HoverCardTrigger,
 } from "@/components/ui/hover-card"
+import { ProjectFilterForm } from "./_forms";
 const integrations = [
     { id: 1, name: "Jira", icon: FaJira, isConnected: true },
     { id: 2, name: "Slack", icon: FaSlack, isConnected: true },
@@ -31,13 +32,13 @@ export default async function Page({ params }: { params: { id: string } }) {
             <div className="flex flex-col gap-6">
                 <div className="flex gap-6">
                     <Card className="flex-grow">
-                        <CardContent className="p-6">
+                        <CardContent className="p-2">
                             <div className="flex items-start space-x-6">
-                                <Avatar className="w-32 h-32">
+                                <Avatar className="w-32 h-32 rounded-lg">
                                     <AvatarImage src={project.avatar} alt={project.name} />
                                     <AvatarFallback>{project.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div className="flex-grow">
+                                <div className="flex-grow space-y-8">
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col max-w-xl">
                                             <h2 className="text-2xl font-bold mb-2">{project.name}</h2>
@@ -45,15 +46,19 @@ export default async function Page({ params }: { params: { id: string } }) {
                                         </div>
                                         <div className="flex space-x-2">
                                             <div className="relative group">
-                                                <Button variant="ghost" size="icon">
-                                                    <Filter className="h-4 w-4" />
-                                                </Button>
-                                                <span className="absolute hidden group-hover:inline-block bg-gray-800 text-white text-xs px-2 py-1 rounded-md -bottom-8 left-1/2 transform -translate-x-1/2">
-                                                    Filter
-                                                </span>
+                                                <ProjectFilterForm trigger={
+                                                    <>
+                                                        <Button variant="secondary" size="icon">
+                                                            <Filter className="h-4 w-4" />
+                                                        </Button>
+                                                        <span className="absolute hidden group-hover:inline-block bg-gray-800 text-white text-xs px-2 py-1 rounded-md -bottom-8 left-1/2 transform -translate-x-1/2">
+                                                            Filter
+                                                        </span>
+                                                    </>
+                                                } />
                                             </div>
                                             <div className="relative group">
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="secondary" size="icon">
                                                     <Search className="h-4 w-4" />
                                                 </Button>
                                                 <span className="absolute hidden group-hover:inline-block bg-gray-800 text-white text-xs px-2 py-1 rounded-md -bottom-8 left-1/2 transform -translate-x-1/2">
@@ -62,7 +67,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                                             </div>
                                             <div className="relative group">
                                                 <Link href={`/projects/${project.id}/settings/general`}
-                                                    className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                                                    className={cn(buttonVariants({ variant: "secondary", size: "icon" }))}
                                                 >
                                                     <Settings className="h-4 w-4" />
                                                 </Link>
@@ -73,10 +78,17 @@ export default async function Page({ params }: { params: { id: string } }) {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <Badge variant="secondary" className="text-sm">
-                                            <Users className="w-4 h-4 mr-1" />
-                                            {project?.members?.length} Members
-                                        </Badge>
+                                        <div className="flex space-x-2">
+
+                                            <Badge variant="secondary" className="text-sm">
+                                                <Users className="w-4 h-4 mr-1" />
+                                                {project?.members?.length || 0} Members
+                                            </Badge>
+                                            <Badge variant="secondary" className="text-sm">
+                                                <Bookmark className="w-4 h-4 mr-1" />
+                                                {project?.status || 'Active'}
+                                            </Badge>
+                                        </div>
                                         <div className="flex space-x-2">
                                             {integrations.map((integration) => (
                                                 <HoverCard key={integration.id} openDelay={100} closeDelay={0} >
@@ -117,7 +129,7 @@ export default async function Page({ params }: { params: { id: string } }) {
 
                     <Card className="w-1/3">
                         <CardContent className="pt-6">
-                            <div className=" divide-y divide-gray-200">
+                            <div className=" divide-y divide-muted">
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-sm text-muted-foreground">Total Tasks</span>
                                     <span className="text-sm font-medium">24</span>
@@ -157,7 +169,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                             <Star className="w-4 h-4 mr-2" />
                             Recommendations
                         </TabsTrigger>
-                        
+
                     </TabsList>
                     <TabsContent value="posts">
                         <Card>

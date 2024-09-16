@@ -12,12 +12,7 @@ import { CircleCheckIcon, CircleXIcon, Loader2, PauseCircleIcon, PencilIcon, Pla
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Define the Zod schema for team creation
-const TeamSchema = z.object({
-    name: z.string().min(2, { message: 'Team name must be at least 2 characters' }),
-    description: z.string().optional(),
-});
+import { useRouter } from 'next/navigation';
 
 // CreateTeamForm component for creating a new team.
 // -------------------------------------------------------------------------------------------------
@@ -78,7 +73,6 @@ export function CreateTeamForm() {
         </Dialog>
     );
 }
-
 
 // UpdateTeamForm component for updating an existing team. 
 // -------------------------------------------------------------------------------------------------
@@ -149,7 +143,6 @@ export function UpdateTeamForm({ team }: { team: { id: string; name: string; des
     );
 }
 
-
 // InviteMembersForm component for inviting members to a team.
 // -------------------------------------------------------------------------------------------------
 export function InviteMembersForm({ team, trigger }: { team: { id: string; name: string; description?: string }, trigger: React.ReactNode }) {
@@ -167,9 +160,13 @@ export function InviteMembersForm({ team, trigger }: { team: { id: string; name:
     }, [state]);
 
     const roles = [
-        { value: 'member', label: 'Member' },
-        { value: 'admin', label: 'Admin' },
-        { value: 'guest', label: 'Guest' },
+        { value: 'Owner', label: 'Owner' },
+        { value: 'Publisher', label: 'Publisher' },
+        { value: 'Editor', label: 'Editor' },
+        { value: 'Creator', label: 'Creator' },
+        { value: 'Moderator', label: 'Moderator' },
+        { value: 'Analyst', label: 'Analyst' },
+        { value: 'Viewer', label: 'Viewer' }
     ];
 
     return (
@@ -228,7 +225,9 @@ export function InviteMembersForm({ team, trigger }: { team: { id: string; name:
     );
 }
 
-export function ToggleTeamStatusForm({ team, trigger }: { team: { id: string; isEnabled: boolean }, trigger: React.ReactNode }) {
+// ToggleTeamStatusForm component for toggling the status of a team.
+// -------------------------------------------------------------------------------------------------
+export function ToggleTeamStatusForm({ team, trigger }: { team: { id: string; disabled: boolean }, trigger: React.ReactNode }) {
     const [state, actions, isPending] = useActionState(toggleTeamStatusAction, null);
 
     useEffect(() => {
@@ -238,26 +237,30 @@ export function ToggleTeamStatusForm({ team, trigger }: { team: { id: string; is
         if (state?.success === false) {
             toast.error(state.message);
         }
+        console.log(state);
     }, [state]);
 
     return (
         <form action={actions}>
             <input type="hidden" name="id" value={team.id} />
-            <Button type="submit" variant={team.isEnabled ? "outline" : "default"} size="sm" disabled={isPending}>
-                {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : team.isEnabled ? <PauseCircleIcon className="w-4 h-4 mr-2" /> : <PlayCircleIcon className="w-4 h-4 mr-2" />}
-                {team.isEnabled ? 'Deactivate Team' : 'Activate Team'}
+            <Button type="submit" variant={!team.disabled ? "outline" : "default"} size="sm" disabled={isPending}>
+                {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : team.disabled ? <PlayCircleIcon className="w-4 h-4 mr-2" /> : <PauseCircleIcon className="w-4 h-4 mr-2" />}
+                {team.disabled ? 'Activate Team' : 'Deactivate Team'}
             </Button>
         </form>
     );
 }
 
+// DeleteTeamForm component for deleting a team.
+// -------------------------------------------------------------------------------------------------
 export function DeleteTeamForm({ team, trigger }: { team: { id: string; }, trigger: React.ReactNode }) {
     const [state, actions, isPending] = useActionState(deleteTeamAction, null);
-
+    const router = useRouter();
     useEffect(() => {
         if (state?.success) {
             toast.success(state.message);
         }
+        console.log(state);
     }, [state]);
 
     return (
@@ -279,10 +282,12 @@ export function DeleteTeamForm({ team, trigger }: { team: { id: string; }, trigg
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <form action={actions}>
-                        <AlertDialogAction >
-                            <input type="hidden" name="id" value={team.id} />
-                            <TrashIcon className="w-4 h-4 mr-2" />
-                            Delete Team
+                        <input type="hidden" name="id" value={team.id} />
+                        <AlertDialogAction asChild className=' bg-destructive text-destructive-foreground hover:bg-destructive/90'>
+                            <Button type="submit" disabled={isPending}>
+                                <TrashIcon className="w-4 h-4 mr-2" />
+                                Delete Team
+                            </Button>
                         </AlertDialogAction>
                     </form>
                 </AlertDialogFooter>

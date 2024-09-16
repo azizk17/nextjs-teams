@@ -8,6 +8,7 @@ export const teamsTable = pgTable('teams', {
     name: text('name').notNull(),
     avatar: text('avatar'),
     description: text('description'),
+    disabled: boolean('disabled').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
     ownerId: text('owner_id').notNull().references(() => usersTable.id),

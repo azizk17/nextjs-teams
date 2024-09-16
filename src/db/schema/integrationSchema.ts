@@ -5,7 +5,7 @@ import { nanoId } from '@/lib/utils';
 
 
 
-export const integrations = pgTable('integrations', {
+export const integrationsTable = pgTable('integrations', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
@@ -14,19 +14,19 @@ export const integrations = pgTable('integrations', {
     updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-export const projectIntegrations = pgTable('project_integrations', {
+export const projectIntegrationsTable = pgTable('project_integrations', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(16)),
-    projectId: integer('project_id').references(() => projectsTable.id),
-    integrationId: integer('integration_id').references(() => integrations.id),
+    projectId: text('project_id').references(() => projectsTable.id),
+    integrationId: text('integration_id').references(() => integrationsTable.id),
     isConnected: boolean('is_connected').default(false),
     config: jsonb('config'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-export const integrationAuthTokens = pgTable('integration_auth_tokens', {
+export const integrationAuthTokensTable = pgTable('integration_auth_tokens', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(16)),
-    projectIntegrationId: text('project_integration_id').references(() => projectIntegrations.id),
+    projectIntegrationId: text('project_integration_id').references(() => projectIntegrationsTable.id),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     expiresAt: timestamp('expires_at'),
@@ -35,28 +35,28 @@ export const integrationAuthTokens = pgTable('integration_auth_tokens', {
 });
 
 // Relations
-export const integrationsRelations = relations(integrations, ({ many }) => ({
-    projectIntegrations: many(projectIntegrations),
+export const integrationsRelations = relations(integrationsTable, ({ many }) => ({
+    projectIntegrations: many(projectIntegrationsTable),
 }));
 
-export const projectIntegrationsRelations = relations(projectIntegrations, ({ one }) => ({
+export const projectIntegrationsRelations = relations(projectIntegrationsTable, ({ one }) => ({
     project: one(projectsTable, {
-        fields: [projectIntegrations.projectId],
+        fields: [projectIntegrationsTable.projectId],
         references: [projectsTable.id],
     }),
-    integration: one(integrations, {
-        fields: [projectIntegrations.integrationId],
-        references: [integrations.id],
+    integration: one(integrationsTable, {
+        fields: [projectIntegrationsTable.integrationId],
+        references: [integrationsTable.id],
     }),
-    authToken: one(integrationAuthTokens, {
-        fields: [projectIntegrations.id],
-        references: [integrationAuthTokens.projectIntegrationId],
+    authToken: one(integrationAuthTokensTable, {
+        fields: [projectIntegrationsTable.id],
+        references: [integrationAuthTokensTable.projectIntegrationId],
     }),
 }));
 
-export const integrationAuthTokensRelations = relations(integrationAuthTokens, ({ one }) => ({
-    projectIntegration: one(projectIntegrations, {
-        fields: [integrationAuthTokens.projectIntegrationId],
-        references: [projectIntegrations.id],
+export const integrationAuthTokensRelations = relations(integrationAuthTokensTable, ({ one }) => ({
+    projectIntegration: one(projectIntegrationsTable, {
+        fields: [integrationAuthTokensTable.projectIntegrationId],
+        references: [projectIntegrationsTable.id],
     }),
 }));

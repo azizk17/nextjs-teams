@@ -296,6 +296,11 @@ export async function getRoleByName(roleName: string): Promise<Role | null> {
     return role;
 }
 
+export async function getRoleId(roleName: string): Promise<number | null> {
+    const role = await getRoleByName(roleName);
+    return role?.id ?? null;
+}
+
 /**
  * Retrieves a user's roles.
  * @param {string} userId - The ID of the user.

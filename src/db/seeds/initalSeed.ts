@@ -3,14 +3,16 @@ import { permissionsTable, rolePermissionsTable, rolesTable } from "../schema";
 import db from "..";
 
 export const roles = [
-  { id: 1, name: 'Owner', description: 'Full control over the channel and app settings' },
+  { id: 1, name: 'Super Admin', description: 'Highest level of access with system-wide control' },
   { id: 2, name: 'Admin', description: 'High-level management access' },
-  { id: 3, name: 'Publisher', description: 'Reviews and approves content' },
-  { id: 4, name: 'Editor', description: 'Can create and edit videos' },
-  { id: 5, name: 'Creator', description: 'Can upload raw footage and create video drafts' },
-  { id: 6, name: 'Moderator', description: 'Manages comments and community engagement' },
-  { id: 7, name: 'Analyst', description: 'Access to analytics and reporting tools' },
-  { id: 8, name: 'Viewer', description: 'Can only view content and basic analytics' },
+  { id: 3, name: 'Owner', description: 'Full control over the channel and app settings' },
+  { id: 4, name: 'Publisher', description: 'Reviews and approves content' },
+  { id: 5, name: 'Editor', description: 'Can create and edit videos' },
+  { id: 6, name: 'Creator', description: 'Can upload raw footage and create video drafts' },
+  { id: 7, name: 'Moderator', description: 'Manages comments and community engagement' },
+  { id: 8, name: 'Analyst', description: 'Access to analytics and reporting tools' },
+  { id: 9, name: 'Viewer', description: 'Can only view content and basic analytics' },
+
 ]
 
 export const permissions = [
@@ -24,8 +26,9 @@ export const permissions = [
 ]
 
 export const rolePermissions = [
-  { role: 'Owner', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
+  { role: "Super Admin", permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
   { role: 'Admin', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
+  { role: 'Owner', permissions: ['create_content', 'edit_content', 'approve_content', 'publish_content', 'manage_users', 'view_analytics', 'moderate_comments'] },
   { role: 'Publisher', permissions: ['approve_content', 'publish_content', 'view_analytics'] },
   { role: 'Editor', permissions: ['create_content', 'edit_content'] },
   { role: 'Creator', permissions: ['create_content'] },

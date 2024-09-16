@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 interface SettingsMenuItemProps {
     href: string;
     label: string;
-    icon: React.ComponentType<LucideProps>;
+    icon: React.ReactNode;
     isActive?: boolean;
 }
 export default function MenuLink({ icon: Icon, label, href, isActive = false }: SettingsMenuItemProps) {
@@ -21,10 +21,10 @@ export default function MenuLink({ icon: Icon, label, href, isActive = false }: 
             href={href}
             className={cn(buttonVariants({ variant: "link" }), {
                 "text-primary font-semibold": isActive,
-                "text-muted-foreground": !isActive
-            })}
+                "text-muted-foreground": !isActive,
+            }, "gap-2")}
         >
-            {/* {Icon} */}
+            {Icon}
             {label}
         </Link>
     );

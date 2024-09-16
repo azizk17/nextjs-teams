@@ -7,7 +7,8 @@ import Link from "next/link";
 import { CreateTeamForm } from "./_forms";
 import { auth } from "@/services/auth";
 import { Metadata } from "next";
-
+import { cookies } from "next/headers";
+import { toast } from "sonner";
 export const metadata: Metadata = {
     title: 'Teams',
     description: 'View your teams',
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 export default async function Page() {
     const { user } = await auth()
     const teams = await getTeamsByUserId(user.id);
+
     return <ContentLayout title="Teams">
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">

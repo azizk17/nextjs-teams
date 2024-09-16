@@ -4,10 +4,13 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from '@/types';
 import { CreateTeamSchema, Team } from '@/db/schema';
-import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, updateTeam } from '@/services/teamService';
+import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, getTeam, updateTeam, getTeamInvitation, getTeamMember, deleteTeamInvitation } from '@/services/teamService';
 import { redirect } from 'next/navigation';
 import { auth } from '@/services/auth';
-import { getUserByEmail, getUserByUsername } from '@/services/userService';
+import { getRoleId, getUserByEmail, getUserByUsername } from '@/services/userService';
+import { cookies } from 'next/headers'
+import { handleActionError, handleActionSuccess, noRes, okRes } from '@/lib/utils';
+import { BadRequestError, ConflictError, NotFoundError } from '@/utils/errors';
 
 // Update schemas
 const ChangeRoleSchema = z.object({
@@ -44,38 +47,25 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
     // get user id from session
     const { user } = await auth()
 
-    const validated = CreateTeamSchema.omit({ id: true }).safeParse({
-        // id: "23e23",
-        name: formData.get("name"),
-        description: formData.get("description"),
-        ownerId: user.id,
-        // avatar: formData.get("avatar"),
-        avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${formData.get("name")}`,
-    });
-
-    if (!validated.success) {
-        return {
-            success: false,
-            status: 400,
-            message: "Failed to create team",
-            errors: validated.error.flatten().fieldErrors,
-        };
-    }
     let team: Team | null = null;
     try {
+        const validated = CreateTeamSchema.omit({ id: true }).parse({
+            name: formData.get("name"),
+            description: formData.get("description"),
+            ownerId: user.id,
+            // avatar: formData.get("avatar"),
+            avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${formData.get("name")}`,
+        });
         team = await createTeam({
-            name: validated.data.name,
-            avatar: validated.data.avatar || undefined,
-            description: validated.data.description || undefined,
-            ownerId: validated.data.ownerId,
+            name: validated.name,
+            avatar: validated.avatar || undefined,
+            description: validated.description || undefined,
+            ownerId: validated.ownerId,
         });
     } catch (error) {
-        return {
-            success: false,
-            status: 500,
-            message: error instanceof Error ? error.message : 'Failed to create team',
-        };
+        return noRes(error);
     }
+
     redirect(`/teams/${team?.id}`);
 }
 
@@ -93,33 +83,24 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
  * appropriate error responses.
  */
 export async function updateTeamAction(prevState: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateTeamSchema.pick({ id: true, name: true, description: true }).safeParse({
-        id: formData.get("id"),
-        name: formData.get("name"),
-        description: formData.get("description"),
-    });
-
-    if (!validated.success) {
-        return {
-            success: false,
-            status: 400,
-            errors: validated.error.flatten().fieldErrors,
-        };
-    }
-
+    // auth & authz hook 
     try {
-        const team = await updateTeam(validated.data.id, {
-            name: validated.data.name,
-            description: validated.data.description,
+        const validated = CreateTeamSchema.pick({ id: true, name: true, description: true }).parse({
+            id: formData.get("id"),
+            name: formData.get("name"),
+            description: formData.get("description"),
         });
+        const team = await updateTeam(validated.id, {
+            name: validated.name,
+            description: validated.description,
+        });
+        if (!team) {
+            throw new BadRequestError("Team not found");
+        }
         revalidatePath(`/teams/${team.id}`);
-        return { success: true, message: "Team updated successfully" };
+        return okRes(`Team updated successfully`);
     } catch (error) {
-        return {
-            success: false,
-            status: 500,
-            message: error instanceof Error ? error.message : 'Failed to update team',
-        };
+        return noRes(error);
     }
 }
 
@@ -136,29 +117,23 @@ export async function updateTeamAction(prevState: any, formData: FormData): Prom
  * appropriate error responses.
  */
 export async function deleteTeamAction(prevState: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateTeamSchema.pick({ id: true }).safeParse({
-        id: formData.get("id"),
-    });
-
-    if (!validated.success) {
-        return {
-            success: false,
-            status: 400,
-            errors: validated.error.flatten().fieldErrors,
-        };
-    }
-
+    // TODO: auth & authz hook 
     try {
-        await deleteTeam(validated.data.id);
-        revalidatePath("/teams");
-        return { success: true, message: "Team deleted successfully" };
+        const validated = z.object({
+            id: z.string().min(3, "Team ID is required"),
+        }).parse({
+            id: formData.get("id"),
+        });
+        const team = await getTeam(validated.id);
+        if (!team) {
+            throw new BadRequestError("Team not found");
+        }
+        await deleteTeam(validated.id);
     } catch (error) {
-        return {
-            success: false,
-            status: 500,
-            message: error instanceof Error ? error.message : 'Failed to delete team',
-        };
+        return noRes(error);
     }
+
+    redirect("/teams");
 }
 
 
@@ -231,14 +206,13 @@ export async function toggleMemberStatusAction(prevState: any, formData: FormDat
 
     try {
         const { memberId, status } = validated.data;
-        // Implement member status toggle logic here
-        // if (status === 'disable') {
-        //   await disableMember(memberId);
-        // } else {
-        //   await enableMember(memberId);
-        // }
+        const member = await getTeamMember(memberId);
+        if (!member) {
+            return { success: false, status: 404, message: "Member not found" };
+        }
+        await updateTeamMember(memberId, { status: status === 'disable' ? 'disable' : 'enable' });
+        revalidatePath(`/teams/${teamId}`);
 
-        revalidatePath("/teams");
         return {
             success: true,
             message: `Member ${status === 'disable' ? 'disabled' : 'enabled'} successfully`
@@ -265,37 +239,25 @@ export async function toggleMemberStatusAction(prevState: any, formData: FormDat
  * appropriate error responses.
  */
 export async function deleteMemberAction(prevState: any, formData: FormData): Promise<ActionResponse> {
-    const validated = DeleteMemberSchema.safeParse({
-        memberId: formData.get("memberId"),
-    });
-
-    if (!validated.success) {
-        return {
-            success: false,
-            status: 400,
-            errors: validated.error.flatten().fieldErrors,
-        };
-    }
 
     try {
+        const validated = DeleteMemberSchema.parse({
+            memberId: formData.get("memberId"),
+        });
         // Implement member deletion logic here
         // await deleteMember(validated.data.memberId);
-
         revalidatePath("/teams");
-        return { success: true, message: "Member deleted successfully" };
+        return okRes("Member deleted successfully");
     } catch (error) {
-        return {
-            success: false,
-            status: 500,
-            message: error instanceof Error ? error.message : 'Failed to delete member',
-        };
+        return noRes(error);
     }
 }
 
+const roleSchema = z.enum(["Publisher", "Editor", "Creator", "Moderator", "Analyst", "Viewer"])
 const InviteMembersSchema = z.object({
     teamId: z.string(),
     emailOrUsername: z.string(),
-    role: z.enum(['admin', 'member', 'guest'])
+    role: roleSchema
         .refine(
             (value) => {
                 // Check if it's an email format
@@ -312,67 +274,78 @@ const InviteMembersSchema = z.object({
         ),
 });
 
-export async function inviteMembersAction(prevState: any, formData: FormData): Promise<ActionResponse> {
+export async function inviteMemberAction(prevState: any, formData: FormData): Promise<ActionResponse> {
     const { user } = await auth()
-    const validated = InviteMembersSchema.safeParse({
-        teamId: formData.get("teamId"),
-        emailOrUsername: formData.get("emailOrUsername"),
-        role: formData.get("role"),
-    });
-    if (!validated.success) {
-        return {
-            success: false,
-            status: 400,
-            errors: validated.error.flatten().fieldErrors,
-            message: "Failed to invite members",
-        };
-    }
 
     try {
-        const { teamId, emailOrUsername, role } = validated.data;
-
-        // Determine if the input is an email or username
-        const isEmail = z.string().email().safeParse(emailOrUsername).success;
-        const userToInvite = isEmail ? await getUserByEmail(emailOrUsername) : await getUserByUsername(emailOrUsername);
-
-        if (!userToInvite && isEmail) {
-            const invitation = await createTeamInvitation({
-                teamId,
-                inviteeEmail: emailOrUsername,
-                inviterId: user.id,
-                role,
-                token: crypto.randomUUID(),
-                expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // 3 days
-            });
-            // TODO: send email to the invitee 
-            // send email to the invitee 
-            // await sendEmail(invitation.token, invitation.inviteeEmail);
-            return { success: true, message: "Invitation sent successfully" };
+        const validated = InviteMembersSchema.parse({
+            teamId: formData.get("teamId"),
+            emailOrUsername: formData.get("emailOrUsername"),
+            role: formData.get("role"),
+        });
+        const { teamId, emailOrUsername, role } = validated;
+        const roleId = await getRoleId(role);
+        if (!roleId) {
+            throw new BadRequestError("Role not found");
         }
-
-        if (!user) {
-            return {
-                success: false,
-                status: 404,
-                message: "User not found",
+        // Check if the user is already a member of the team
+        const existingUser = await getUserByEmail(emailOrUsername);
+        if (existingUser) {
+            const existingMember = await getTeamMember(teamId, existingUser.id);
+            if (existingMember) {
+                throw new ConflictError("User is already a member of this team");
             };
         }
-        await addMemberToTeam(teamId, user.id, role);
+
+
+        // Check if there's an existing, unexpired invitation
+        const existingInvitation = await getTeamInvitation(teamId, emailOrUsername);
+        if (existingInvitation && existingInvitation.expiresAt > new Date()) {
+            throw new ConflictError("An invitation has already been sent to this email");
+        }
+
+        // If there's an expired invitation, delete it
+        if (existingInvitation) {
+            await deleteTeamInvitation(existingInvitation.id);
+        }
+
+        // Create new invitation
+        const invitation = await createTeamInvitation({
+            teamId,
+            inviteeEmail: emailOrUsername,
+            inviterId: user.id,
+            roleId: roleId,
+            token: crypto.randomUUID(),
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // 3 days
+        });
+
+        // Send invitation email
+        // await sendEmail(invitation.token, invitation.inviteeEmail);
 
         revalidatePath(`/teams/${teamId}`);
-        return { success: true, message: "Member added successfully" };
+        return okRes("Invitation sent successfully");
     } catch (error) {
-        return {
-            success: false,
-            status: 500,
-            message: error instanceof Error ? error.message : 'Failed to delete member',
-        };
+        return noRes(error);
     }
 }
 
 // toggle team status
 export async function toggleTeamStatusAction(prevState: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateTeamSchema.pick({ id: true }).safeParse({
-        id: formData.get("id"),
-    });
+
+    try {
+        const validated = z.object({
+            id: z.string().min(3, "Team ID is required"),
+        }).parse({
+            id: formData.get("id"),
+        });
+        const team = await getTeam(validated.id);
+        if (!team) {
+            throw new BadRequestError("Team not found");
+        }
+        await updateTeam(validated.id, { disabled: !team.disabled });
+        revalidatePath(`/teams/${validated.id}`);
+        return okRes(`Team ${team.disabled ? "enabled" : "disabled"} successfully`);
+    } catch (error) {
+        return noRes(error);
+    }
 }
