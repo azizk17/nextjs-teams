@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeleteTeamForm, InviteMembersForm, ToggleTeamStatusForm, UpdateTeamForm } from "../_forms";
 import { auth } from "@/services/auth";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: 'Team',
+    description: 'View your team',
+}
 
 export default async function Page({ params }: { params: { id: string } }) {
     const { user } = await auth()

@@ -6,6 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { CreateTeamForm } from "./_forms";
 import { auth } from "@/services/auth";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: 'Teams',
+    description: 'View your teams',
+}
 
 export default async function Page() {
     const { user } = await auth()

@@ -6,7 +6,12 @@ import { getProjectsByUserId } from "@/services/projectService";
 import { ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Metadata } from "next";
 
+export const metadata: Metadata = {
+    title: 'Projects',
+    description: 'View your projects',
+}
 
 interface Project {
     id: string;

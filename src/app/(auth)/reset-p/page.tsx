@@ -1,6 +1,11 @@
 import { getTokenById } from "@/services/userService";
-import { NewPasswordForm, OtpVerificationForm, PasswordResetForm, PasswordResetRequestForm } from "../_forms";
+import { NewPasswordForm, OtpVerificationForm, PasswordResetRequestForm } from "../_forms";
+import type { Metadata } from 'next'
 
+export const metadata: Metadata = {
+    title: 'Reset Password',
+    description: 'Reset your password',
+}
 export default async function Page({ searchParams }: { searchParams: { token: string, otp: string } }) {
 
     const otp = searchParams.otp;

@@ -2,6 +2,13 @@ import { SignUpForm } from "../_forms";
 import { auth } from "@/services/authService";
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: 'Sign Up',
+    description: 'Sign up to our platform',
+}
+
 export async function PageCenter() {
     const { isAuthenticated } = await auth()
     if (isAuthenticated) {
