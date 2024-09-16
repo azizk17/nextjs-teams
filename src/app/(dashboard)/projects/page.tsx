@@ -6,7 +6,11 @@ import { getProjectsByUserId } from "@/services/projectService";
 import { ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+
 import { Metadata } from "next";
+
+import { CreateProjectForm } from "./_forms";
 
 export const metadata: Metadata = {
     title: 'Projects',
@@ -42,7 +46,7 @@ const ProjectCard = ({ project }: { project: Project }) => {
                     </Link>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow line-clamp-2 ">
                 <p className="text-sm text-gray-600">{project.description || "No description available."}</p>
             </CardContent>
             <CardFooter className="text-sm text-gray-500">
@@ -57,8 +61,11 @@ const ProjectCard = ({ project }: { project: Project }) => {
 
 function ProjectList({ title, projects }: { title: string; projects: Project[] }) {
     return (
-        <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-4">{title}</h2>
+        <div className="">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold mb-4">{title}</h2>
+                {title === "My Projects" && <CreateProjectForm />}
+            </div>
             {projects.length === 0 ? (
                 <p className="text-gray-500">No projects found.</p>
             ) : (
@@ -74,13 +81,12 @@ function ProjectList({ title, projects }: { title: string; projects: Project[] }
 
 export default async function Page() {
 
-    const { isAuthenticated } = await auth()
+    const { user, isAuthenticated } = await auth()
     if (!isAuthenticated) {
         return redirect('/signin')
     }
 
-    const userId = "9";
-    const ownedProjects = await getProjectsByUserId(userId);
+    const ownedProjects = await getProjectsByUserId(user.id);
     // TODO: Implement getSharedProjects function in projectService
     const sharedProjects: Project[] = []; // await getSharedProjects(userId);
 
@@ -88,9 +94,6 @@ export default async function Page() {
     return (
         <ContentLayout title="Projects">
             <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl font-bold">Projects</h1>
-                </div>
                 <ProjectList title="My Projects" projects={ownedProjects} />
                 <ProjectList title="Shared Projects" projects={sharedProjects} />
             </div>

@@ -11,6 +11,7 @@ import { createTeamAction, deleteTeamAction, inviteMembersAction, toggleTeamStat
 import { CircleCheckIcon, CircleXIcon, Loader2, PauseCircleIcon, PencilIcon, PlayCircleIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Define the Zod schema for team creation
 const TeamSchema = z.object({
@@ -165,6 +166,12 @@ export function InviteMembersForm({ team, trigger }: { team: { id: string; name:
         }
     }, [state]);
 
+    const roles = [
+        { value: 'member', label: 'Member' },
+        { value: 'admin', label: 'Admin' },
+        { value: 'guest', label: 'Guest' },
+    ];
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -176,23 +183,40 @@ export function InviteMembersForm({ team, trigger }: { team: { id: string; name:
                 </DialogHeader>
                 <form action={actions}>
                     <input type="hidden" name="teamId" value={team.id} />
-                    <div className="grid gap-4">
+                    <div className="flex flex-col gap-4">
                         {state?.success === false && (
                             <div className="text-lg text-destructive">
                                 {state.message}
                             </div>
                         )}
-                        <div className="grid gap-2">
-                            <Label htmlFor="emailOrUsername">Email or Username</Label>
-                            <Input
-                                id="emailOrUsername"
-                                name="emailOrUsername"
-                                placeholder="Enter email or @username"
-                                required
-                            />
-                            {state?.errors?.email && (
-                                <span className="text-sm text-destructive">{state.errors.email}</span>
-                            )}
+                        <div className="flex gap-4">
+                            <div className="flex-grow">
+                                <Label htmlFor="emailOrUsername">Email or Username</Label>
+                                <Input
+                                    id="emailOrUsername"
+                                    name="emailOrUsername"
+                                    placeholder="Enter email or @username"
+                                    required
+                                />
+                                {state?.errors?.email && (
+                                    <span className="text-sm text-destructive">{state.errors.email}</span>
+                                )}
+                            </div>
+                            <div className="w-1/3">
+                                <Label htmlFor="role">Role</Label>
+                                <Select name="role">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {roles.map((role) => (
+                                            <SelectItem key={role.value} value={role.value}>
+                                                {role.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                     <Button type="submit" className="mt-4" disabled={isPending}>
@@ -221,7 +245,7 @@ export function ToggleTeamStatusForm({ team, trigger }: { team: { id: string; is
             <input type="hidden" name="id" value={team.id} />
             <Button type="submit" variant={team.isEnabled ? "outline" : "default"} size="sm" disabled={isPending}>
                 {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : team.isEnabled ? <PauseCircleIcon className="w-4 h-4 mr-2" /> : <PlayCircleIcon className="w-4 h-4 mr-2" />}
-                {team.isEnabled ? 'Deactivate Team' : 'Activate Team'}   
+                {team.isEnabled ? 'Deactivate Team' : 'Activate Team'}
             </Button>
         </form>
     );

@@ -7,8 +7,8 @@
  */
 
 import db from "@/db";
-import { projectsTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { InsertProject, projectsTable } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export async function getProjectsByUserId(userId: string) {
     return db.select({
@@ -19,7 +19,8 @@ export async function getProjectsByUserId(userId: string) {
         createdAt: projectsTable.createdAt,
         updatedAt: projectsTable.updatedAt,
     }).from(projectsTable)
-        .where(eq(projectsTable.ownerId, userId));
+        .where(eq(projectsTable.ownerId, userId))
+        .orderBy(desc(projectsTable.createdAt));
 }
 
 
@@ -35,12 +36,27 @@ export async function getProjectsByTeamId(teamId: string) {
 }
 
 export async function getProjectById(id: string) {
-    return db.select({
+    const [project] = await db.select({
         id: projectsTable.id,
         name: projectsTable.name,
         description: projectsTable.description,
+        avatar: projectsTable.avatar,
         createdAt: projectsTable.createdAt,
         updatedAt: projectsTable.updatedAt,
     }).from(projectsTable)
         .where(eq(projectsTable.id, id));
+
+    return project;
+}
+
+export async function createProject(project: InsertProject) {
+    return db.insert(projectsTable).values(project).returning();
+}
+
+export async function updateProject(id: string, project: { name: string, description: string }) {
+    return db.update(projectsTable).set(project).where(eq(projectsTable.id, id));
+}
+
+export async function deleteProject(id: string) {
+    return db.delete(projectsTable).where(eq(projectsTable.id, id));
 }

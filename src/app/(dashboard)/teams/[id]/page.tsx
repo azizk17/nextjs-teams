@@ -29,49 +29,44 @@ export default async function Page({ params }: { params: { id: string } }) {
     return (
         <ContentLayout title="Team">
             <div className="flex flex-col gap-6">
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center space-x-4 mt-2">
-                            <Avatar className="w-16 h-16">
-                                <AvatarImage src={team.avatar!} alt={`${team.name} avatar`} className="w-full h-full" />
-                                <AvatarFallback>
-                                    <User2Icon className="w-8 h-8" />
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col items-start gap-1">
-                                <div className="flex items-center space-x-2">
-                                    <CardTitle>{team.name}</CardTitle>
-                                    <UpdateTeamForm team={team} />
+                <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 shadow-lg">
+                    <CardHeader className="p-6">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex items-center space-x-4">
+                                <Avatar className="w-20 h-20 border-4 border-primary/20">
+                                    <AvatarImage src={team.avatar!} alt={`${team.name} avatar`} className="w-full h-full" />
+                                    <AvatarFallback>
+                                        <User2Icon className="w-10 h-10" />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div className="flex items-center space-x-2">
+                                        <CardTitle className="text-2xl">{team.name}</CardTitle>
+                                        <UpdateTeamForm team={team} />
+                                    </div>
+                                    <CardDescription className="mt-1 text-muted-foreground text-sm line-clamp-2 max-w-2xl">{team.description}</CardDescription>
+                                    <p className="text-sm text-muted-foreground mt-1">Owner ID: {team.ownerId}</p>
                                 </div>
-                                <p className="text-sm text-muted-foreground">Owner ID: {team.ownerId}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+                                <InviteMembersForm team={team} trigger={
+                                    <Button variant="outline" size="sm">
+                                        <PlusIcon className="w-4 h-4 mr-2" />
+                                        Add Member
+                                    </Button>
+                                } />
+                                <ToggleTeamStatusForm team={team} />
+                                <DeleteTeamForm team={team} />
                             </div>
                         </div>
-                        <CardDescription className="mt-2">{team.description}</CardDescription>
-                        <div className="mt-2 text-sm text-muted-foreground">
+                    </CardHeader>
+                    <CardContent className="bg-card/50 p-4 text-sm text-muted-foreground">
+                        <div className="flex justify-between">
                             <p>Created: {new Date(team.createdAt!).toLocaleDateString()}</p>
                             <p>Last Updated: {formatDistanceToNow(new Date(team.updatedAt!), { addSuffix: true })}</p>
                         </div>
-                    </CardHeader>
+                    </CardContent>
                 </Card>
-
-                {/* New Action Bar */}
-                <div className="flex justify-between items-center bg-background p-4 rounded-lg shadow-sm">
-                    <div className="flex gap-2">
-                        {/* <Button variant="outline" size="sm">
-                            <EditIcon className="w-4 h-4 mr-2" />
-                            Edit Team
-                        </Button> */}
-                        <InviteMembersForm team={team} trigger={<Button variant="outline" size="sm">
-                            <PlusIcon className="w-4 h-4 mr-2" />       
-                            Add Member
-                        </Button>} />
-                        
-                    </div>
-                    <div className="flex gap-2">
-                        <ToggleTeamStatusForm team={team}  />
-                        <DeleteTeamForm team={team} />
-                    </div>
-                </div>
 
                 <Tabs defaultValue="members">
                     <TabsList className="grid w-full grid-cols-4">

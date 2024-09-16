@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutGrid, LogOut, User } from "lucide-react";
+import { LayoutGrid, Loader, LogOut, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,8 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-
+import { signout } from "@/app/(auth)/_actions";
+import { startTransition, useActionState, useTransition } from "react";
 export function UserNav() {
+  const [state, formAction, isPending] = useActionState(signout, {
+    error: null
+  });
   return (
     <DropdownMenu>
       <TooltipProvider disableHoverableContent>
@@ -55,21 +59,28 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem className="hover:cursor-pointer" asChild>
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/" className="flex items-center">
               <LayoutGrid className="w-4 h-4 mr-3 text-muted-foreground" />
               Dashboard
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem className="hover:cursor-pointer" asChild>
-            <Link href="/account" className="flex items-center">
+            <Link href="/settings/account" className="flex items-center">
               <User className="w-4 h-4 mr-3 text-muted-foreground" />
               Account
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="hover:cursor-pointer" onClick={() => {}}>
-          <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />
+
+        <DropdownMenuItem
+          onSelect={(event) => event.preventDefault()}
+          className="hover:cursor-pointer" disabled={isPending} onClick={() => {
+            startTransition(() => {
+              formAction()
+            })
+          }}>
+          {isPending ? <Loader className=" animate-spin w-4 h-4 mr-3 text-muted-foreground" /> : <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />}
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from '@/types';
-import { CreateTeamSchema } from '@/db/schema';
+import { CreateTeamSchema, Team } from '@/db/schema';
 import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, updateTeam } from '@/services/teamService';
 import { redirect } from 'next/navigation';
 import { auth } from '@/services/auth';
@@ -61,17 +61,14 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
             errors: validated.error.flatten().fieldErrors,
         };
     }
-
+    let team: Team | null = null;
     try {
-        const team = await createTeam({
+        team = await createTeam({
             name: validated.data.name,
             avatar: validated.data.avatar || undefined,
             description: validated.data.description || undefined,
             ownerId: validated.data.ownerId,
         });
-
-        revalidatePath("/teams");
-        redirect(`/teams/${team.id}`);
     } catch (error) {
         return {
             success: false,
@@ -79,6 +76,7 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
             message: error instanceof Error ? error.message : 'Failed to create team',
         };
     }
+    redirect(`/teams/${team?.id}`);
 }
 
 
@@ -326,6 +324,7 @@ export async function inviteMembersAction(prevState: any, formData: FormData): P
             success: false,
             status: 400,
             errors: validated.error.flatten().fieldErrors,
+            message: "Failed to invite members",
         };
     }
 
@@ -337,7 +336,6 @@ export async function inviteMembersAction(prevState: any, formData: FormData): P
         const userToInvite = isEmail ? await getUserByEmail(emailOrUsername) : await getUserByUsername(emailOrUsername);
 
         if (!userToInvite && isEmail) {
-
             const invitation = await createTeamInvitation({
                 teamId,
                 inviteeEmail: emailOrUsername,
@@ -360,6 +358,7 @@ export async function inviteMembersAction(prevState: any, formData: FormData): P
             };
         }
         await addMemberToTeam(teamId, user.id, role);
+
         revalidatePath(`/teams/${teamId}`);
         return { success: true, message: "Member added successfully" };
     } catch (error) {
