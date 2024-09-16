@@ -35,21 +35,21 @@ export function getMenuList(pathname: string): Group[] {
         {
           href: "/projects",
           label: "Projects",
-          active: pathname.includes("/projects"),
+          active: pathname.startsWith("/projects"),
           icon: LayoutGrid,
           submenus: []
         },
         {
           href: "/teams",
           label: "Teams",
-          active: pathname.includes("/teams"),
+          active: pathname.startsWith("/teams"),
           icon: Users,
           submenus: []
         },
         {
           href: "/settings/profile",
           label: "Settings",
-          active: pathname.includes("/settings"),
+          active: pathname.startsWith("/settings"),
           icon: Settings,
           submenus: []
         }
