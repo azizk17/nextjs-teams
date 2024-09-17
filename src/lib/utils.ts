@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { customAlphabet } from "nanoid";
-import { BadRequestError, ConflictError, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError, ValidationError } from "@/utils/errors";
+import { BadRequestError, ConflictError, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError, ValidationError } from "@/lib/errors";
 import { ZodError } from "zod";
 import { ActionResponse } from "@/types";
 export function cn(...inputs: ClassValue[]) {
@@ -23,6 +23,23 @@ export function okRes(message: string): ActionResponse {
   };
 }
 
+export function errorResponse(status: number, message: string, errors?: Record<string, string | string[]>): ActionResponse {
+  return {
+    success: false,
+    status,
+    message,
+    errors,
+  };
+}
+
+export function successResponse(message: string, data?: any): ActionResponse {
+  return {
+    success: true,
+    status: 200,
+    message,
+    data,
+  };
+}
 // noRes function for error
 // This function is used to return an error response for an action
 // -------------------------------------------------------------------------------------------------

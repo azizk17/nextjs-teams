@@ -8,10 +8,11 @@ import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, getTeam,
 import { redirect } from 'next/navigation';
 import { auth } from '@/services/auth';
 import { getRoleId, getUserByEmail, getUserByUsername } from '@/services/userService';
-import { cookies } from 'next/headers'
-import { handleActionError, handleActionSuccess, noRes, okRes } from '@/lib/utils';
-import { BadRequestError, ConflictError, NotFoundError } from '@/utils/errors';
+import { errorResponse, noRes, okRes, successResponse } from '@/lib/utils';
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import { authGuard } from '@/services/authService';
 
+const idSchema = z.string().min(3, "Team ID is required");
 // Update schemas
 const ChangeRoleSchema = z.object({
     memberId: z.string(),
@@ -118,19 +119,22 @@ export async function updateTeamAction(prevState: any, formData: FormData): Prom
  */
 export async function deleteTeamAction(prevState: any, formData: FormData): Promise<ActionResponse> {
     // TODO: auth & authz hook 
+    const validated = z.object({
+        id: z.string().min(3, "Team ID is required"),
+    }).safeParse({
+        id: formData.get("id"),
+    });
+    if (!validated.success) {
+        return errorResponse(400, "Invalid input", validated.error.flatten().fieldErrors);
+    }
+    const team = await getTeam(validated.data.id);
+    if (!team) {
+        return errorResponse(404, "Team not found");
+    }
     try {
-        const validated = z.object({
-            id: z.string().min(3, "Team ID is required"),
-        }).parse({
-            id: formData.get("id"),
-        });
-        const team = await getTeam(validated.id);
-        if (!team) {
-            throw new BadRequestError("Team not found");
-        }
-        await deleteTeam(validated.id);
+        await deleteTeam(validated.data.id);
     } catch (error) {
-        return noRes(error);
+        return errorResponse(500, "Failed to delete team", { details: error instanceof Error ? error.message : "Unknown error" });
     }
 
     redirect("/teams");
@@ -331,21 +335,29 @@ export async function inviteMemberAction(prevState: any, formData: FormData): Pr
 
 // toggle team status
 export async function toggleTeamStatusAction(prevState: any, formData: FormData): Promise<ActionResponse> {
+    const { authorized, error } = await authGuard("toggle_team_status")
+    if (!authorized) {
+        redirect(error?.redirect!)
+    }
 
+    const validated = z.object({
+        id: z.string().min(3, "Team ID is required"),
+    }).safeParse({
+        id: formData.get("id"),
+    });
+    if (!validated.success) {
+        return errorResponse(400, "Invalid input", validated.error.flatten().fieldErrors);
+    }
+    const { id } = validated.data;
+    const team = await getTeam(id);
+    if (!team) {
+        return errorResponse(404, "Team not found");
+    }
     try {
-        const validated = z.object({
-            id: z.string().min(3, "Team ID is required"),
-        }).parse({
-            id: formData.get("id"),
-        });
-        const team = await getTeam(validated.id);
-        if (!team) {
-            throw new BadRequestError("Team not found");
-        }
-        await updateTeam(validated.id, { disabled: !team.disabled });
-        revalidatePath(`/teams/${validated.id}`);
-        return okRes(`Team ${team.disabled ? "enabled" : "disabled"} successfully`);
+        await updateTeam(id, { disabled: !team.disabled, updatedAt: new Date() });
+        revalidatePath(`/teams/${id}`);
+        return successResponse(`Team ${team.disabled ? "enabled" : "disabled"} successfully`);
     } catch (error) {
-        return noRes(error);
+        return errorResponse(500, "Failed to update team status", { details: error instanceof Error ? error.message : "Unknown error" });
     }
 }

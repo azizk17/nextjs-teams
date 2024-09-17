@@ -79,6 +79,9 @@ export const CreateUserSchema = createInsertSchema(usersTable);
 export type Role = typeof rolesTable.$inferSelect;
 export type InsertRole = typeof rolesTable.$inferInsert;
 
+export type Permission = typeof permissionsTable.$inferSelect;
+export type InsertPermission = typeof permissionsTable.$inferInsert;
+
 export type Token = typeof tokensTable.$inferSelect;
 export type InsertToken = typeof tokensTable.$inferInsert;
 

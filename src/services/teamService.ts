@@ -1,7 +1,7 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
 import db from '@/db';
 import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable, invitationsTable, teamInvitationsTable, InsertTeamInvitation, InsertTeam } from '@/db/schema';
-import { NotFoundError, ConflictError } from '@/utils/errors';
+import { NotFoundError, ConflictError } from '@/lib/errors';
 
 export async function getTeam(id: string) {
     const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, id));

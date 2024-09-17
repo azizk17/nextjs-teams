@@ -7,7 +7,7 @@ import { lucia, validateRequest } from "@/services/auth/lucia-auth"
 import { RedirectType, redirect } from "next/navigation";
 import { ActionResponse } from "@/types";
 
-import { sendEmail } from "@/utils/email";
+import { sendEmail } from "@/lib/email";
 import { CreateUserSchema, Token, User } from "@/db/schema";
 import {
     createUser, generateVerificationCode, getLastTokenByUserIdAndType, getTokenById, getUser, getUserByEmail, invalidateToken, updateUser, verifyVerificationCode

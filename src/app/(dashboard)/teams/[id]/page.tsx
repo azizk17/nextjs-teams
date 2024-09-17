@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DeleteTeamForm, InviteMembersForm, ToggleTeamStatusForm, UpdateTeamForm } from "../_forms";
 import { auth } from "@/services/auth";
 import { Metadata } from "next";
+import { authGuard } from "@/services/authService";
+import { redirect } from "next/navigation";
+
 
 export const metadata: Metadata = {
     title: 'Team',
@@ -19,7 +22,11 @@ export const metadata: Metadata = {
 }
 
 export default async function Page({ params }: { params: { id: string } }) {
-    const { user } = await auth()
+    const { authorized, error, user, can } = await authGuard("")
+    if (!authorized) {
+        redirect(error?.redirect!)
+    }
+    return <pre className="text-md text-muted-foreground ">- {JSON.stringify(user, null, 2)}</pre>
     const team = await getTeam(params.id);
     const members = await getProjectMembersWithRoles(params.id);
     // const projects = await getTeamProjects(params.id);

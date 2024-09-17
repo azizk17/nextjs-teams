@@ -1,7 +1,7 @@
 import db from "@/db";
-import { InsertToken, InsertUser, Role, rolesTable, Token, tokensTable, User, userRolesTable, usersTable } from "@/db/schema";
+import { InsertToken, InsertUser, Permission, permissionsTable, Role, rolePermissionsTable, rolesTable, Token, tokensTable, User, userRolesTable, usersTable } from "@/db/schema";
 import { addHours } from "date-fns";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import _ from "lodash";
 import { customAlphabet } from "nanoid";
 
@@ -307,6 +307,36 @@ export async function getRoleId(roleName: string): Promise<number | null> {
  * @returns {Promise<Role[]>} A promise that resolves to an array of roles.
  */
 export async function getUserRoles(userId: string): Promise<Role[]> {
-    const roles = await db.select().from(userRolesTable).where(eq(userRolesTable.userId, userId));
-}
+    const roles = await db
+        .select({
+            id: rolesTable.id,
+            name: rolesTable.name,
+            description: rolesTable.description,
+        })
+        .from(userRolesTable)
+        .innerJoin(rolesTable, eq(userRolesTable.roleId, rolesTable.id))
+        .where(eq(userRolesTable.userId, userId));
 
+    return roles;
+}
+/**
+ * Retrieves a user's permissions.
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<Permission[]>} A promise that resolves to an array of permissions.
+ */
+export async function getUserPermissions(userId: string): Promise<Permission[]> {
+    const permissions = await db
+        .select({
+            id: permissionsTable.id,
+            name: permissionsTable.name,
+            description: permissionsTable.description,
+        })
+        .from(userRolesTable)
+        .innerJoin(rolesTable, eq(userRolesTable.roleId, rolesTable.id))
+        .innerJoin(rolePermissionsTable, eq(rolesTable.id, rolePermissionsTable.roleId))
+        .innerJoin(permissionsTable, eq(rolePermissionsTable.permissionId, permissionsTable.id))
+        .where(eq(userRolesTable.userId, userId))
+        .groupBy(permissionsTable.id, permissionsTable.name, permissionsTable.description);
+
+    return permissions;
+}
