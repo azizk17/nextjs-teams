@@ -1,8 +1,10 @@
-import { UnauthenticatedError } from "@/lib/errors"
+import { ForbiddenError, UnauthenticatedError } from "@/lib/errors"
 import { validateRequest } from "./auth/lucia-auth"
 import { User } from "lucia"
 import { teamMembersTable, teamsTable } from "@/db/schema"
 import db from "@/db"
+
+import { isTeamMemberOrOwner } from "./teamService"
 
 // @deprecated
 export async function auth() {
@@ -27,8 +29,9 @@ export async function user() {
 
 type AuthGuardResult = {
     authorized: boolean;
-    user?: User;
-    error?: { status: number; message: string, redirect?: string };
+    user: User;
+    // @deprecated
+    // error?: { status: number; message: string, redirect?: string };
     can?: (permission: string) => boolean;
 };
 
@@ -60,23 +63,22 @@ const can = (user: User, permission: string) => {
  */
 export async function authGuard(permission?: string): Promise<AuthGuardResult> {
     const { user, session } = await validateRequest()
-
+    console.log("user", user)
     if (!session) {
-        return { authorized: false, error: { status: 401, message: "User is not authenticated", redirect: "/errors/401" } };
+        throw new UnauthenticatedError();
+        // return { authorized: false, error: { status: 401, message: "User is not authenticated", redirect: "/errors/401" } };
     }
 
-    const can = (permission: string) => {
+
+    const can = (permission: string | string[]) => {
         if (!user || !user.permissions) return false;
-        return user.permissions.includes(permission);
-    }
-    if (permission) {
+        const permissions = Array.isArray(permission) ? permission : [permission];
+        return permissions.some(p => user.permissions.includes(p));
+    };
+    if (permission && permission.trim()) {
         const hasUserPermission = can(permission);
         if (!hasUserPermission) {
-            return {
-                authorized: false,
-                user,
-                error: { status: 403, message: `You are not authorized to ${permission.replace(':', ' ')}`, redirect: "/errors/403" }
-            };
+            throw new ForbiddenError();
         }
     }
 
@@ -113,3 +115,25 @@ export async function teamAuthGuard(teamId: string, permission: string): Promise
 
     return { authorized: true, user, can: (permission: string) => can(user, permission) };
 }
+// Team auth guard
+export async function teamAuthGuard1(teamId: string, permission?: string): Promise<AuthGuardResult> {
+    const authResult = await authGuard(permission);
+
+    if (!authResult.authorized) {
+        return authResult;
+    }
+
+    const isTeamMember = await isTeamMemberOrOwner(teamId, authResult.user.id);
+    if (!isTeamMember) {
+        throw new ForbiddenError();
+    }
+
+    return {
+        ...authResult,
+        can: (teamPermission: string) => {
+            if (!authResult.can) return false;
+            return authResult.can(`team:${teamId}:${teamPermission}`);
+        }
+    };
+}
+

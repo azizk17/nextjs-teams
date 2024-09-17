@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from '@/types';
 import { CreateTeamSchema, Team } from '@/db/schema';
-import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, getTeam, updateTeam, getTeamInvitation, getTeamMember, deleteTeamInvitation } from '@/services/teamService';
+import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, getTeam, updateTeam, getTeamInvitation, getTeamMember, deleteTeamInvitation, isTeamMember, canAccessTeam, isTeamMemberOrOwner } from '@/services/teamService';
 import { redirect } from 'next/navigation';
 import { auth } from '@/services/auth';
 import { getRoleId, getUserByEmail, getUserByUsername } from '@/services/userService';
 import { errorResponse, noRes, okRes, successResponse } from '@/lib/utils';
-import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '@/lib/errors';
 import { authGuard } from '@/services/authService';
 
 const idSchema = z.string().min(3, "Team ID is required");
@@ -333,21 +333,22 @@ export async function inviteMemberAction(prevState: any, formData: FormData): Pr
     }
 }
 
+
 // toggle team status
 export async function toggleTeamStatusAction(prevState: any, formData: FormData): Promise<ActionResponse> {
-    const { authorized, error } = await authGuard("toggle_team_status")
-    if (!authorized) {
-        redirect(error?.redirect!)
+    // check if user is authenticated and has permission to access the team
+    const { user } = await authGuard("create_content")
+    const isTeamMember = await isTeamMemberOrOwner(formData.get("id") as string, user.id)
+    if (!isTeamMember) {
+        throw new ForbiddenError();
     }
 
-    const validated = z.object({
-        id: z.string().min(3, "Team ID is required"),
-    }).safeParse({
-        id: formData.get("id"),
-    });
+    const validated = z.object({ id: z.string().min(3, "Team ID is required") }).safeParse({ id: formData.get("id") });
+
     if (!validated.success) {
         return errorResponse(400, "Invalid input", validated.error.flatten().fieldErrors);
     }
+
     const { id } = validated.data;
     const team = await getTeam(id);
     if (!team) {

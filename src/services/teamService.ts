@@ -25,6 +25,25 @@ export async function deleteTeam(id: string) {
     return deletedTeam;
 }
 
+// is team member
+export async function isTeamMember(teamId: string, userId: string) {
+    const [member] = await db.select().from(teamMembersTable).where(and(eq(teamMembersTable.teamId, teamId), eq(teamMembersTable.userId, userId)));
+    return member ? true : false;
+}
+
+// is team owner
+export async function isTeamOwner(teamId: string, userId: string) {
+    const [team] = await db.select().from(teamsTable).where(and(eq(teamsTable.id, teamId), eq(teamsTable.ownerId, userId)));
+    return team ? true : false;
+}
+
+// can access team
+export async function isTeamMemberOrOwner(teamId: string, userId: string) {
+    const isMember = await isTeamMember(teamId, userId);
+    const isOwner = await isTeamOwner(teamId, userId);
+    return isMember || isOwner;
+}
+
 export async function addProjectToTeam(teamId: string, projectId: string) {
     try {
         const [teamProject] = await db.insert(teamProjectsTable)

@@ -13,7 +13,7 @@ import { DeleteTeamForm, InviteMembersForm, ToggleTeamStatusForm, UpdateTeamForm
 import { auth } from "@/services/auth";
 import { Metadata } from "next";
 import { authGuard } from "@/services/authService";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 
 export const metadata: Metadata = {
@@ -26,8 +26,10 @@ export default async function Page({ params }: { params: { id: string } }) {
     if (!authorized) {
         redirect(error?.redirect!)
     }
-    return <pre className="text-md text-muted-foreground ">- {JSON.stringify(user, null, 2)}</pre>
     const team = await getTeam(params.id);
+    if (!team) {
+        notFound()
+    }
     const members = await getProjectMembersWithRoles(params.id);
     // const projects = await getTeamProjects(params.id);
     // const messages = await getTeamMessages(params.id);
