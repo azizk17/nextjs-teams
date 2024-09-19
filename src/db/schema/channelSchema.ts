@@ -61,3 +61,10 @@ export const channelIntegrationSchema = createInsertSchema(channelIntegrationsTa
 export type Channel = typeof channelsTable.$inferSelect;
 export type NewChannel = typeof channelsTable.$inferInsert;
 export const channelSchema = createInsertSchema(channelsTable);
+
+export type Post = typeof postsTable.$inferSelect;
+export type NewPost = typeof postsTable.$inferInsert;
+export const postSchema = createInsertSchema(postsTable);
+
+
+
