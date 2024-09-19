@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, primaryKey, integer, boolean, unique, json, s
 import { createInsertSchema } from 'drizzle-zod';
 import { nanoId } from '@/lib/utils';
 import { rolesTable, usersTable } from './userSchema';
+
 // Teams table
 export const teamsTable = pgTable('teams', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
@@ -13,8 +14,6 @@ export const teamsTable = pgTable('teams', {
     updatedAt: timestamp('updated_at').defaultNow(),
     ownerId: text('owner_id').notNull().references(() => usersTable.id),
 });
-
-
 
 // Team Members table
 export const teamMembersTable = pgTable('team_members', {
@@ -39,9 +38,7 @@ export const teamMemberRolesTable = pgTable('team_member_roles', {
     unique: unique().on(t.teamMemberId, t.roleId),
 }));
 
-
-
-
+// Team Invitations table
 export const teamInvitationsTable = pgTable('team_invitations', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     teamId: text('team_id').notNull().references(() => teamsTable.id),
@@ -56,15 +53,19 @@ export const teamInvitationsTable = pgTable('team_invitations', {
 });
 
 export type Team = typeof teamsTable.$inferSelect;
-export type InsertTeam = typeof teamsTable.$inferInsert;
-export const CreateTeamSchema = createInsertSchema(teamsTable);
+export type NewTeam = typeof teamsTable.$inferInsert;
+export const teamSchema = createInsertSchema(teamsTable);
 
 export type TeamMember = typeof teamMembersTable.$inferSelect;
-export type InsertTeamMember = typeof teamMembersTable.$inferInsert;
+export type NewTeamMember = typeof teamMembersTable.$inferInsert;
 
 export type TeamMemberRole = typeof teamMemberRolesTable.$inferSelect;
-export type InsertTeamMemberRole = typeof teamMemberRolesTable.$inferInsert;
+export type NewTeamMemberRole = typeof teamMemberRolesTable.$inferInsert;
 
 export type TeamInvitation = typeof teamInvitationsTable.$inferSelect;
-export type InsertTeamInvitation = typeof teamInvitationsTable.$inferInsert;
-export const CreateTeamInvitationSchema = createInsertSchema(teamInvitationsTable);
+export type NewTeamInvitation = typeof teamInvitationsTable.$inferInsert;
+// Schemas
+export const teamInvitationSchema = createInsertSchema(teamInvitationsTable);
+export const teamMemberSchema = createInsertSchema(teamMembersTable);
+export const teamMemberRoleSchema = createInsertSchema(teamMemberRolesTable);
+

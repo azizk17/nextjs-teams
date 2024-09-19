@@ -3,6 +3,7 @@ import {
   Users,
   Settings,
   Bookmark,
+  ImagesIcon,
   SquarePen,
   LayoutGrid,
   LucideIcon
@@ -44,6 +45,13 @@ export function getMenuList(pathname: string): Group[] {
           label: "Teams",
           active: pathname.startsWith("/teams"),
           icon: Users,
+          submenus: []
+        },
+        {
+          href: "/library",
+          label: "Library",
+          active: pathname.startsWith("/library"),
+          icon: ImagesIcon,
           submenus: []
         },
         {

@@ -1,7 +1,7 @@
-
 import { pgTable, text, timestamp, primaryKey, integer, boolean, unique, json, serial, pgEnum } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { nanoId } from '@/lib/utils';
+
 // Users table
 export const usersTable = pgTable('users', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
@@ -14,12 +14,15 @@ export const usersTable = pgTable('users', {
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+// Sessions table
 export const sessionsTable = pgTable("session", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(() => usersTable.id),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull()
 });
 
+// Tokens table
 export const tokenTypes = pgEnum('type', ['email_verification', 'password_reset', 'phone_verification', "access_token", "refresh_token"]);
 export const tokensTable = pgTable('tokens', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(32)),
@@ -73,15 +76,28 @@ export const userRolesTable = pgTable('user_roles', {
 // Types
 // -------------------------------------------------------------------------------------------------
 export type User = typeof usersTable.$inferSelect;
-export type InsertUser = typeof usersTable.$inferInsert;
-export const CreateUserSchema = createInsertSchema(usersTable);
+export type NewUser = typeof usersTable.$inferInsert;
 
 export type Role = typeof rolesTable.$inferSelect;
-export type InsertRole = typeof rolesTable.$inferInsert;
+export type NewRole = typeof rolesTable.$inferInsert;
 
 export type Permission = typeof permissionsTable.$inferSelect;
-export type InsertPermission = typeof permissionsTable.$inferInsert;
+export type NewPermission = typeof permissionsTable.$inferInsert;
 
 export type Token = typeof tokensTable.$inferSelect;
-export type InsertToken = typeof tokensTable.$inferInsert;
+export type NewToken = typeof tokensTable.$inferInsert;
 
+export type UserRole = typeof userRolesTable.$inferSelect;
+export type NewUserRole = typeof userRolesTable.$inferInsert;
+
+export type RolePermission = typeof rolePermissionsTable.$inferSelect;
+export type NewRolePermission = typeof rolePermissionsTable.$inferInsert;
+
+
+// Schemas
+export const userSchema = createInsertSchema(usersTable);
+export const rolePermissionSchema = createInsertSchema(rolePermissionsTable);
+export const userRoleSchema = createInsertSchema(userRolesTable);
+export const tokenSchema = createInsertSchema(tokensTable);
+export const roleSchema = createInsertSchema(rolesTable);
+export const permissionSchema = createInsertSchema(permissionsTable);

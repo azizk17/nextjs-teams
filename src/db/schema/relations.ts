@@ -2,6 +2,8 @@ import { relations } from 'drizzle-orm';
 import { permissionsTable, rolePermissionsTable, rolesTable, userRolesTable, usersTable } from './userSchema';
 import { teamMemberRolesTable, teamMembersTable, teamsTable } from './teamSchema';
 import { projectsTable, teamProjectsTable } from './projectSchema';
+import { platformsTable, integrationPlatformsTable, integrationsTable, projectIntegrationsTable, integrationAuthTokensTable } from './platformsSchema';
+import { postsTable, authorTable, postTagsTable, postMediaTable, categoriesTable, collectionsTable, mediaTable, mediaTagsTable, postCategoriesTable, postCollectionsTable, tagsTable } from './postSchema';
 
 
 
@@ -97,14 +99,132 @@ export const teamMemberRolesRelations = relations(teamMemberRolesTable, ({ one }
 }));
 
 
+// Platforms relations
+export const platformsRelations = relations(platformsTable, ({ many }) => ({
+    posts: many(postsTable),
+    integrations: many(integrationPlatformsTable),
+}));
+
+export const integrationPlatformsRelations = relations(integrationPlatformsTable, ({ one }) => ({
+    integration: one(integrationsTable, {
+        fields: [integrationPlatformsTable.integrationId],
+        references: [integrationsTable.id],
+    }),
+    platform: one(platformsTable, {
+        fields: [integrationPlatformsTable.platformId],
+        references: [platformsTable.id],
+    }),
+}));
+
+export const integrationsRelations = relations(integrationsTable, ({ many }) => ({
+    projectIntegrations: many(projectIntegrationsTable),
+    platforms: many(integrationPlatformsTable),
+}));
+
+export const projectIntegrationsRelations = relations(projectIntegrationsTable, ({ one }) => ({
+    project: one(projectsTable, {
+        fields: [projectIntegrationsTable.projectId],
+        references: [projectsTable.id],
+    }),
+    integration: one(integrationsTable, {
+        fields: [projectIntegrationsTable.integrationId],
+        references: [integrationsTable.id],
+    }),
+    authToken: one(integrationAuthTokensTable, {
+        fields: [projectIntegrationsTable.id],
+        references: [integrationAuthTokensTable.projectIntegrationId],
+    }),
+}));
+
+export const integrationAuthTokensRelations = relations(integrationAuthTokensTable, ({ one }) => ({
+    projectIntegration: one(projectIntegrationsTable, {
+        fields: [integrationAuthTokensTable.projectIntegrationId],
+        references: [projectIntegrationsTable.id],
+    }),
+}));
 
 
+// Posts relations
+export const postsRelations = relations(postsTable, ({ many, one }) => ({
+    collections: many(postCollectionsTable),
+    media: many(postMediaTable),
+    tags: many(postTagsTable),
+    categories: many(postCategoriesTable),
+    author: one(authorTable, {
+        fields: [postsTable.authorId],
+        references: [authorTable.id],
+    }),
+    platform: one(platformsTable, {
+        fields: [postsTable.platformId],
+        references: [platformsTable.id],
+    }),
+}));
 
+export const collectionsRelations = relations(collectionsTable, ({ many }) => ({
+    posts: many(postCollectionsTable),
+}));
 
+export const postCollectionsRelations = relations(postCollectionsTable, ({ one }) => ({
+    post: one(postsTable, {
+        fields: [postCollectionsTable.postId],
+        references: [postsTable.id],
+    }),
+    collection: one(collectionsTable, {
+        fields: [postCollectionsTable.collectionId],
+        references: [collectionsTable.id],
+    }),
+}));
 
+export const postMediaRelations = relations(postMediaTable, ({ one }) => ({
+    post: one(postsTable, {
+        fields: [postMediaTable.postId],
+        references: [postsTable.id],
+    }),
+    media: one(mediaTable, {
+        fields: [postMediaTable.mediaId],
+        references: [mediaTable.id],
+    }),
+}));
 
-// export type UserWithRelations = User & { roles?: Role[] }
+export const mediaRelations = relations(mediaTable, ({ one, many }) => ({
+    postMedia: one(postMediaTable, {
+        fields: [mediaTable.id],
+        references: [postMediaTable.mediaId],
+    }),
+    tags: many(mediaTagsTable),
+}));
 
+export const authorRelations = relations(authorTable, ({ many }) => ({
+    posts: many(postsTable),
+}));
 
+export const tagsRelations = relations(tagsTable, ({ many }) => ({
+    posts: many(postTagsTable),
+    media: many(mediaTagsTable),
+}));
 
+export const categoriesRelations = relations(categoriesTable, ({ many }) => ({
+    posts: many(postCategoriesTable),
+}));
 
+export const postTagsRelations = relations(postTagsTable, ({ one }) => ({
+    post: one(postsTable, {
+        fields: [postTagsTable.postId],
+        references: [postsTable.id],
+    }),
+    tag: one(tagsTable, {
+        fields: [postTagsTable.tagId],
+        references: [tagsTable.id],
+    }),
+}));
+
+export const postCategoriesRelations = relations(postCategoriesTable, ({ one }) => ({
+    post: one(postsTable, {
+        fields: [postCategoriesTable.postId],
+        references: [postsTable.id],
+    }),
+    category: one(categoriesTable, {
+        fields: [postCategoriesTable.categoryId],
+        references: [categoriesTable.id],
+    }),
+}));
