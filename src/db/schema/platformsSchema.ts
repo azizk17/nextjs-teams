@@ -67,8 +67,8 @@ export type IntegrationAuthTokens = typeof integrationAuthTokensTable.$inferSele
 export type NewIntegrationAuthTokens = typeof integrationAuthTokensTable.$inferInsert;
 
 // schema
-export const platformsSchema = createInsertSchema(platformsTable);
-export const integrationPlatformsSchema = createInsertSchema(integrationPlatformsTable);
-export const integrationsSchema = createInsertSchema(integrationsTable);
-export const projectIntegrationsSchema = createInsertSchema(projectIntegrationsTable);
-export const integrationAuthTokensSchema = createInsertSchema(integrationAuthTokensTable);
+export const insertPlatformsSchema = createInsertSchema(platformsTable);
+export const insertIntegrationPlatformsSchema = createInsertSchema(integrationPlatformsTable);
+export const insertIntegrationsSchema = createInsertSchema(integrationsTable);
+export const insertProjectIntegrationsSchema = createInsertSchema(projectIntegrationsTable);
+export const insertIntegrationAuthTokensSchema = createInsertSchema(integrationAuthTokensTable);

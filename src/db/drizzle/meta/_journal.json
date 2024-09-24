@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726299286435,
-      "tag": "0000_gray_phil_sheldon",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1726380396935,
-      "tag": "0001_conscious_gargoyle",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1726381857862,
-      "tag": "0002_sour_smasher",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1726473848587,
-      "tag": "0003_mute_alex_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1726486905174,
-      "tag": "0004_short_wrecker",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1726486995682,
-      "tag": "0005_abandoned_komodo",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1726499781401,
-      "tag": "0006_oval_zombie",
+      "when": 1726827031346,
+      "tag": "0000_pale_hydra",
       "breakpoints": true
     }
   ]

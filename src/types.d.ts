@@ -1,5 +1,10 @@
 declare global {
 }
+
+export type Pagination = { page: number, limit?: number };
+
+
+
 export type ActionResponse<T = any> = {
     success: boolean;
     message?: string;

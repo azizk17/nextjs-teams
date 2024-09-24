@@ -95,9 +95,9 @@ export type NewRolePermission = typeof rolePermissionsTable.$inferInsert;
 
 
 // Schemas
-export const userSchema = createInsertSchema(usersTable);
-export const rolePermissionSchema = createInsertSchema(rolePermissionsTable);
-export const userRoleSchema = createInsertSchema(userRolesTable);
-export const tokenSchema = createInsertSchema(tokensTable);
-export const roleSchema = createInsertSchema(rolesTable);
-export const permissionSchema = createInsertSchema(permissionsTable);
+export const insertUserSchema = createInsertSchema(usersTable);
+export const insertRolePermissionSchema = createInsertSchema(rolePermissionsTable);
+export const insertUserRoleSchema = createInsertSchema(userRolesTable);
+export const insertTokenSchema = createInsertSchema(tokensTable);
+export const insertRoleSchema = createInsertSchema(rolesTable);
+export const insertPermissionSchema = createInsertSchema(permissionsTable);

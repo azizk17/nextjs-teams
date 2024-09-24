@@ -1,21 +1,39 @@
 
-import { pgTable, text, timestamp, integer, jsonb, AnyPgColumn } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, jsonb, AnyPgColumn, pgEnum } from 'drizzle-orm/pg-core';
 import { nanoId } from '@/lib/utils';
-import { relations } from 'drizzle-orm';
 import { platformsTable } from './platformsSchema';
+import { createInsertSchema } from 'drizzle-zod';
 
+const usageRightsEnum = pgEnum('usage_rights', ['public', 'private', 'royalty-free', 'copyrighted', 'custom']);
 export const mediaTable = pgTable('media', {
-    id: text('id').primaryKey().$defaultFn(() =>  nanoId(10)),
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     title: text('title').notNull(),
     content: jsonb('content'),
     url: text('url').notNull(),
     thumbnailUrl: text('thumbnail_url'),
     type: text('type').notNull(), // e.g. image, video, audio, file
+    duration: integer('duration'),
+    publishedAt: timestamp('published_at'),
+    authorId: text('author_id').references(() => authorsTable.id),
+    platformId: text('platform_id').references(() => platformsTable.id),
+    usageRights: usageRightsEnum("usage_rights").default('public'),
     metadata: jsonb('metadata'),
-    
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+
+});
+
+// Subtitles table
+export const subtitlesTable = pgTable('subtitles', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    mediaId: text('media_id').notNull().references(() => mediaTable.id),
+    language: text('language').notNull(),
+    url: text('url').notNull(),
+    format: text('format').notNull(), // e.g., 'srt', 'vtt', 'ass'
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
 
 // Authors table
 export const authorsTable = pgTable('authors', {
@@ -45,7 +63,7 @@ export const collectionsTable = pgTable('collections', {
 });
 
 // Media collections relation table
-export const mediaCollectionsTable = pgTable('media_collections', {
+export const mediaToCollectionsTable = pgTable('media_to_collections', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     mediaId: text('media_id').notNull().references(() => mediaTable.id),
     collectionId: text('collection_id').notNull().references(() => collectionsTable.id),
@@ -85,35 +103,40 @@ export const mediaCategoriesTable = pgTable('media_categories', {
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Relations
 
 
-export const mediaRelations = relations(mediaTable, ({ many }) => ({
-    collections: many(mediaCollectionsTable),
-    tags: many(mediaTagsTable),
-    categories: many(mediaCategoriesTable),
-}));
+// types
+export type Media = typeof mediaTable.$inferSelect;
+export type InsertMedia = typeof mediaTable.$inferInsert;
+export const insertMediaSchema = createInsertSchema(mediaTable);
 
-export const authorRelations = relations(authorsTable, ({ many }) => ({
-    media: many(mediaTable),
-}));
-
-export const collectionRelations = relations(collectionsTable, ({ many }) => ({
-    media: many(mediaCollectionsTable),
-}));
-
-export const tagRelations = relations(tagsTable, ({ many }) => ({
-    media: many(mediaTagsTable),
-}));
-
-export const categoryRelations = relations(categoriesTable, ({ many, one }) => ({
-    media: many(mediaCategoriesTable),
-    parent: one(categoriesTable, {
-        fields: [categoriesTable.parentId],
-        references: [categoriesTable.id],
-    }),
-    children: many(categoriesTable),
-}));
+export type Subtitle = typeof subtitlesTable.$inferSelect;
+export type InsertSubtitle = typeof subtitlesTable.$inferInsert;
+export const insertSubtitleSchema = createInsertSchema(subtitlesTable);
 
 
+export type MediaToCollection = typeof mediaToCollectionsTable.$inferSelect;
+export type InsertMediaToCollection = typeof mediaToCollectionsTable.$inferInsert;
+export const insertMediaToCollectionSchema = createInsertSchema(mediaToCollectionsTable);
+
+export type Collection = typeof collectionsTable.$inferSelect;
+export type InsertCollection = typeof collectionsTable.$inferInsert;
+export const insertCollectionSchema = createInsertSchema(collectionsTable);
+
+
+export type Tag = typeof tagsTable.$inferSelect;
+export type InsertTag = typeof tagsTable.$inferInsert;
+export const insertTagSchema = createInsertSchema(tagsTable);
+
+export type MediaTag = typeof mediaTagsTable.$inferSelect;
+export type InsertMediaTag = typeof mediaTagsTable.$inferInsert;
+export const insertMediaTagSchema = createInsertSchema(mediaTagsTable);
+
+export type Category = typeof categoriesTable.$inferSelect;
+export type InsertCategory = typeof categoriesTable.$inferInsert;
+export const insertCategorySchema = createInsertSchema(categoriesTable);
+
+export type MediaCategory = typeof mediaCategoriesTable.$inferSelect;
+export type InsertMediaCategory = typeof mediaCategoriesTable.$inferInsert;
+export const insertMediaCategorySchema = createInsertSchema(mediaCategoriesTable);
 

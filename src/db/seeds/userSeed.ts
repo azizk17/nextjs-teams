@@ -18,6 +18,17 @@ export async function seed() {
         updatedAt: faker.date.recent(),
     }));
 
+    users.push({
+        id: "11",
+        name: "Admin",
+        avatar: "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Admin",
+        username: "admin",
+        password: "12345678",
+        email: "admin@gmail.com",
+        createdAt: faker.date.past(),
+        updatedAt: faker.date.recent(),
+    })
+
 
     // Seed Teams
     const teams = Array.from({ length: 3 }, (_, i) => ({

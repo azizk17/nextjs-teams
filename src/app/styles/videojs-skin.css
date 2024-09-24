@@ -1,0 +1,105 @@
+/* Custom Video.js Skin - YouTube-like */
+
+/* Player Background */
+.video-js {
+    background-color: #000000;
+}
+
+/* Control Bar */
+.vjs-control-bar {
+    background-color: rgba(0, 0, 0, 0.7);
+    height: 40px;
+}
+
+/* Play/Pause Button */
+.vjs-play-control {
+    font-size: 1.5em;
+}
+
+/* Progress Bar */
+.vjs-progress-control {
+    position: absolute;
+    top: -10px;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+}
+
+.vjs-progress-holder {
+    height: 5px;
+}
+
+.vjs-play-progress {
+    background-color: #ff0000;
+}
+
+.vjs-progress-control:hover .vjs-progress-holder {
+    height: 10px;
+}
+
+/* Time Display */
+.vjs-current-time,
+.vjs-duration,
+.vjs-time-divider {
+    padding: 0 5px;
+}
+
+/* Volume Control */
+.vjs-volume-panel {
+    margin-right: 10px;
+}
+
+.vjs-volume-control {
+    width: 5em;
+}
+
+.vjs-volume-bar {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.vjs-volume-level {
+    background-color: #ffffff;
+}
+
+/* Fullscreen Button */
+.vjs-fullscreen-control {
+    margin-right: 10px;
+}
+
+/* Big Play Button */
+.vjs-big-play-button {
+    background-color: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 50%;
+    font-size: 3em;
+    height: 1.5em;
+    width: 1.5em;
+    line-height: 1.5em;
+}
+
+.vjs-big-play-button:hover {
+    background-color: #ff0000;
+}
+
+/* Loading Spinner */
+.vjs-loading-spinner {
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    border-top: 3px solid #ff0000;
+}
+
+/* Hover effects */
+.video-js .vjs-control:hover {
+    color: #ff0000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vjs-control-bar {
+        height: 35px;
+    }
+
+    .vjs-play-control {
+        font-size: 1.2em;
+    }
+}

@@ -65,7 +65,7 @@ export type NewTeamMemberRole = typeof teamMemberRolesTable.$inferInsert;
 export type TeamInvitation = typeof teamInvitationsTable.$inferSelect;
 export type NewTeamInvitation = typeof teamInvitationsTable.$inferInsert;
 // Schemas
-export const teamInvitationSchema = createInsertSchema(teamInvitationsTable);
-export const teamMemberSchema = createInsertSchema(teamMembersTable);
-export const teamMemberRoleSchema = createInsertSchema(teamMemberRolesTable);
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitationsTable);
+export const insertTeamMemberSchema = createInsertSchema(teamMembersTable);
+export const insertTeamMemberRoleSchema = createInsertSchema(teamMemberRolesTable);
 

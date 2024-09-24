@@ -149,16 +149,16 @@ export type Category = typeof categoriesTable.$inferSelect;
 export type NewCategory = typeof categoriesTable.$inferInsert;
 
 // Schemas
-export const postSchema = createInsertSchema(postsTable);
-export const collectionSchema = createInsertSchema(collectionsTable);
-export const postCollectionSchema = createInsertSchema(postCollectionsTable);
-export const postMediaSchema = createInsertSchema(postMediaTable);
-export const mediaSchema = createInsertSchema(mediaTable);
-export const authorSchema = createInsertSchema(authorTable);
-export const tagSchema = createInsertSchema(tagsTable);
-export const categorySchema = createInsertSchema(categoriesTable);
-export const postTagSchema = createInsertSchema(postTagsTable);
-export const postCategorySchema = createInsertSchema(postCategoriesTable);
-export const mediaTagSchema = createInsertSchema(mediaTagsTable);
+export const insertPostSchema = createInsertSchema(postsTable);
+export const insertCollectionSchema = createInsertSchema(collectionsTable);
+export const insertPostCollectionSchema = createInsertSchema(postCollectionsTable);
+export const insertPostMediaSchema = createInsertSchema(postMediaTable);
+export const insertMediaSchema = createInsertSchema(mediaTable);
+export const insertAuthorSchema = createInsertSchema(authorTable);
+export const insertTagSchema = createInsertSchema(tagsTable);
+export const insertCategorySchema = createInsertSchema(categoriesTable);
+export const insertPostTagSchema = createInsertSchema(postTagsTable);
+export const insertPostCategorySchema = createInsertSchema(postCategoriesTable);
+export const insertMediaTagSchema = createInsertSchema(mediaTagsTable);
 
 

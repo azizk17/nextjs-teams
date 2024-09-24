@@ -55,16 +55,16 @@ export const postsCommentsTable = pgTable('posts_comments', {
 
 export type ChannelIntegration = typeof channelIntegrationsTable.$inferSelect;
 export type NewChannelIntegration = typeof channelIntegrationsTable.$inferInsert;
-export const channelIntegrationSchema = createInsertSchema(channelIntegrationsTable);
+export const insertChannelIntegrationSchema = createInsertSchema(channelIntegrationsTable);
 
 
 export type Channel = typeof channelsTable.$inferSelect;
 export type NewChannel = typeof channelsTable.$inferInsert;
-export const channelSchema = createInsertSchema(channelsTable);
+export const insertChannelSchema = createInsertSchema(channelsTable);
 
 export type Post = typeof postsTable.$inferSelect;
 export type NewPost = typeof postsTable.$inferInsert;
-export const postSchema = createInsertSchema(postsTable);
+export const insertPostSchema = createInsertSchema(postsTable);
 
 
 

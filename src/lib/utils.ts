@@ -12,17 +12,6 @@ export function nanoId(length: number) {
   const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', length);
   return nanoid();
 }
-// okRes function for success
-// This function is used to return a success response for an action
-// -------------------------------------------------------------------------------------------------
-export function okRes(message: string): ActionResponse {
-  return {
-    success: true,
-    status: 200,
-    message,
-  };
-}
-
 export function errorResponse(status: number, message: string, errors?: Record<string, string | string[]>): ActionResponse {
   return {
     success: false,
@@ -40,6 +29,21 @@ export function successResponse(message: string, data?: any): ActionResponse {
     data,
   };
 }
+
+// @deprecated
+// okRes function for success
+// This function is used to return a success response for an action
+// -------------------------------------------------------------------------------------------------
+export function okRes(message: string): ActionResponse {
+  return {
+    success: true,
+    status: 200,
+    message,
+  };
+}
+
+// @deprecated
+// deprecated bcz nextjs docs recommend using a return instead of throwing an error
 // noRes function for error
 // This function is used to return an error response for an action
 // -------------------------------------------------------------------------------------------------

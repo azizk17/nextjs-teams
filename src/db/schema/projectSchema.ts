@@ -41,4 +41,4 @@ export const messagesTable = pgTable('messages', {
 
 export type Project = typeof projectsTable.$inferSelect;
 export type NewProject = typeof projectsTable.$inferInsert;
-export const projectSchema = createInsertSchema(projectsTable);
+export const insertProjectSchema = createInsertSchema(projectsTable);

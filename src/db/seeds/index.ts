@@ -16,6 +16,8 @@ import { PgTable } from 'drizzle-orm/pg-core';
 import { exit } from 'process';
 import { seed as userSeed } from './userSeed';
 import { seed as initalSeed } from './initalSeed';
+import { seed as mediaSeed } from './mediaSeed';
+import { seedMeilisearch as meilisearchSeed } from './meilisearchSeed';
 // if (!process.env.DB_SEEDING) {
 //     throw new Error('You must set DB_SEEDING to "true" when running seeds');
 // }
@@ -28,10 +30,10 @@ async function main() {
     console.log("Seeding...");
 
     await initalSeed();
-
-
     //!! fake data only for dev environment
     await userSeed();
+    await mediaSeed();
+    // await meilisearchSeed();
     console.log("*** Seeding complete ***");
 }
 

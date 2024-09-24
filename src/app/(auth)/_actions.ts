@@ -8,7 +8,7 @@ import { RedirectType, redirect } from "next/navigation";
 import { ActionResponse } from "@/types";
 
 import { sendEmail } from "@/lib/email";
-import { CreateUserSchema, Token, User } from "@/db/schema";
+import { insertUserSchema, Token, User } from "@/db/schema";
 import {
     createUser, generateVerificationCode, getLastTokenByUserIdAndType, getTokenById, getUser, getUserByEmail, invalidateToken, updateUser, verifyVerificationCode
 } from "@/services/userService";
@@ -33,7 +33,7 @@ const resetPasswordSchema = z.object({
 // Sign in
 // --------------------------------------------------------------------------------
 export async function signin(_: any, formData: FormData): Promise<ActionResponse> {
-    const validated = CreateUserSchema.pick({ email: true, password: true }).safeParse({
+    const validated = insertUserSchema.pick({ email: true, password: true }).safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
     })
@@ -67,7 +67,7 @@ export async function signin(_: any, formData: FormData): Promise<ActionResponse
 // --------------------------------------------------------------------------------
 export async function signup(_: any, formData: FormData): Promise<ActionResponse> {
 
-    const validated = CreateUserSchema.pick({ email: true, password: true, name: true }).safeParse({
+    const validated = insertUserSchema.pick({ email: true, password: true, name: true }).safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
         name: formData.get('name'),
