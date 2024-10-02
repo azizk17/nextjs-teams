@@ -5,14 +5,13 @@ import {
     authorsTable,
     mediaAuthorsTable,
     collectionsTable,
-    mediaCollectionsTable,
     tagsTable,
     mediaTagsTable,
     categoriesTable,
     mediaCategoriesTable,
     InsertMedia,
-    InsertMediaCollection,
-    InsertCollection
+    InsertCollection,
+    mediaToCollectionsTable
 } from '@/db/schema/mediaSchema';
 import { Pagination } from '@/types';
 import { platformsTable } from '@/db/schema';
@@ -163,8 +162,8 @@ export const getMediaInCollection = (collectionId: string) => {
             collection: collectionsTable,
         })
         .from(mediaTable)
-        .innerJoin(mediaCollectionsTable, eq(mediaTable.id, mediaCollectionsTable.mediaId))
-        .innerJoin(collectionsTable, eq(mediaCollectionsTable.collectionId, collectionsTable.id))
+        .innerJoin(mediaToCollectionsTable, eq(mediaTable.id, mediaToCollectionsTable.mediaId))
+        .innerJoin(collectionsTable, eq(mediaToCollectionsTable.collectionId, collectionsTable.id))
         .where(eq(collectionsTable.id, collectionId));
 };
 
@@ -207,8 +206,8 @@ export const getMediaWithAllRelations = () => {
         .from(mediaTable)
         .leftJoin(mediaAuthorsTable, eq(mediaTable.id, mediaAuthorsTable.mediaId))
         .leftJoin(authorsTable, eq(mediaAuthorsTable.authorId, authorsTable.id))
-        .leftJoin(mediaCollectionsTable, eq(mediaTable.id, mediaCollectionsTable.mediaId))
-        .leftJoin(collectionsTable, eq(mediaCollectionsTable.collectionId, collectionsTable.id))
+        .leftJoin(mediaToCollectionsTable, eq(mediaTable.id, mediaToCollectionsTable.mediaId))
+        .leftJoin(collectionsTable, eq(mediaToCollectionsTable.collectionId, collectionsTable.id))
         .leftJoin(mediaTagsTable, eq(mediaTable.id, mediaTagsTable.mediaId))
         .leftJoin(tagsTable, eq(mediaTagsTable.tagId, tagsTable.id))
         .leftJoin(mediaCategoriesTable, eq(mediaTable.id, mediaCategoriesTable.mediaId))
@@ -223,8 +222,8 @@ export const getCollections = async () => {
     return db.select().from(collectionsTable);
 };
 // get recent collections
-export const getRecentCollections = async () => {
-    return db.select().from(collectionsTable).orderBy(desc(collectionsTable.createdAt)).limit(10);
+export const getRecentCollections = async ({ limit = 10 }: { limit: number }) => {
+    return db.select().from(collectionsTable).orderBy(desc(collectionsTable.createdAt)).limit(limit);
 };
 
 // get collection by id
@@ -234,15 +233,61 @@ export const getCollectionById = async (id: string) => {
 
 // create collection
 export const createCollection = async (collection: InsertCollection) => {
-    return db.insert(collectionsTable).values(collection).returning();
+    const [data] = await db.insert(collectionsTable).values(collection).returning();
+    return data;
 };
 
 // update collection
 export const updateCollection = async (id: string, collection: InsertCollection) => {
-    return db.update(collectionsTable).set(collection).where(eq(collectionsTable.id, id));
+    const [data] = await db.update(collectionsTable).set(collection).where(eq(collectionsTable.id, id)).returning();
+    return data;
 };
 
 // delete collection
 export const deleteCollection = async (id: string) => {
-    return db.delete(collectionsTable).where(eq(collectionsTable.id, id));
+    const [data] = await db.delete(collectionsTable).where(eq(collectionsTable.id, id)).returning();
+    return data;
+};
+
+
+// add media to collection
+export const addMediaToCollection = async (mediaIds: string[], collectionIds: string[]) => {
+    const values = mediaIds.flatMap(mediaId =>
+        collectionIds.map(collectionId => ({ mediaId, collectionId }))
+    );
+    return db.insert(mediaToCollectionsTable)
+        .values(values)
+        .onConflictDoNothing()
+        .returning();
+};
+
+// remove media from collection
+export const removeMediaFromCollection = async (mediaId: string, collectionId: string) => {
+    return db.delete(mediaToCollectionsTable).where(and(eq(mediaToCollectionsTable.mediaId, mediaId), eq(mediaToCollectionsTable.collectionId, collectionId)));
+};
+
+// get collections by media id
+export const getCollectionsByMediaId = async (mediaId: string, limit = 3) => {
+    return db.select({
+        id: collectionsTable.id,
+        name: collectionsTable.name,
+        updatedAt: collectionsTable.updatedAt,
+    }).from(mediaToCollectionsTable).innerJoin(collectionsTable, eq(mediaToCollectionsTable.collectionId, collectionsTable.id)).where(eq(mediaToCollectionsTable.mediaId, mediaId)).limit(limit);
+};
+
+// is media in collection
+export const isMediaInCollection = async (mediaId: string, collectionId: string) => {
+    const [data] = await db.select().from(mediaToCollectionsTable).where(and(eq(mediaToCollectionsTable.mediaId, mediaId), eq(mediaToCollectionsTable.collectionId, collectionId)));
+    return data ? true : false;
+};
+
+// are media in collections
+export const areMediaInCollections = async (mediaIds: string[], collectionIds: string[]) => {
+    const data = await db.select().from(mediaToCollectionsTable).where(and(inArray(mediaToCollectionsTable.mediaId, mediaIds), inArray(mediaToCollectionsTable.collectionId, collectionIds)));
+    return data ? true : false;
+};
+
+// search for collections by name
+export const searchCollections = async (query: string) => {
+    return db.select().from(collectionsTable).where(like(collectionsTable.name, `%${query}%`));
 };

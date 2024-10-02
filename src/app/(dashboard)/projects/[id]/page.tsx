@@ -94,12 +94,12 @@ export default async function Page({ params }: { params: { id: string } }) {
                                                 <HoverCard key={integration.id} openDelay={100} closeDelay={0} >
                                                     <HoverCardTrigger>
                                                         <div className={cn(
-                                                            "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:cursor-pointer",
-                                                            integration.isConnected ? "bg-green-100" : "bg-gray-100"
+                                                            "w-8 h-8 rounded-full text-muted-foreground flex items-center justify-center transition-all duration-300 hover:scale-110 hover:cursor-pointer ring-4 ring-offset-2 ring-offset-background ring-ring ",
+                                                            integration.isConnected ? "ring-green-600" : "ring-muted"
                                                         )}>
                                                             <integration.icon className={cn(
                                                                 "w-6 h-6",
-                                                                integration.isConnected ? "text-green-600" : "text-gray-400"
+                                                                // integration.isConnected ? "text-green-600" : "text-gray-400"
                                                             )} />
                                                         </div>
                                                     </HoverCardTrigger>

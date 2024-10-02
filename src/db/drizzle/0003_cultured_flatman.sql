@@ -1,0 +1,1 @@
+ALTER TABLE "media" ALTER COLUMN "usage_rights" SET DEFAULT 'UNSPECIFIED';

@@ -3,7 +3,7 @@
 import qs from "qs"
 import { redirect } from "next/navigation"
 import MeiliSearch from "meilisearch"
-import { deleteMedia, getMedia, searchMedia } from "@/services/mediaService"
+import { addMediaToCollection, createCollection, deleteMedia, getCollectionsByMediaId, getMedia, getRecentCollections, isMediaInCollection, removeMediaFromCollection, searchCollections, searchMedia } from "@/services/mediaService"
 import { errorResponse, successResponse } from "@/lib/utils"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -11,12 +11,12 @@ import { revalidatePath } from "next/cache"
 export async function mediaFiltersActions(_: any, data: FormData) {
     // validate data
     const title = data.get("title")
-    const platform = data.get("platform")
+    const platforms = data.getAll("platforms")
     const author = data.get("author")
 
     const filters = {
         title,
-        platform,
+        platforms,
         author,
     }
 
@@ -148,5 +148,117 @@ export async function createCollectionAction(_: any, data: FormData) {
     if (!result.success) {
         return errorResponse(400, "Invalid data")
     }
-    return successResponse("Collection created")
+    const collection = await createCollection(result.data)
+    revalidatePath("/library")
+    return successResponse("Collection created", { collection })
+}
+
+// toggle collection action
+// -------------------------------------------------------------------------------------------------
+export async function toggleCollectionAction(_: any, data: FormData) {
+    const validate = z.object({
+        mediaId: z.string().min(1, "Please enter a media id"),
+        collectionId: z.string().min(1, "Please enter a collection id"),
+    })
+    const result = validate.safeParse({
+        mediaId: data.get("mediaId"),
+        collectionId: data.get("collectionId"),
+    })
+
+    console.log(result.data)
+    if (!result.success) {
+        console.log(result.error.errors)
+        return errorResponse(400, "Invalid data")
+    }
+    const { mediaId, collectionId } = result.data
+    const isExist = await isMediaInCollection(mediaId, collectionId)
+    if (isExist) {
+        await removeMediaFromCollection(mediaId, collectionId)
+        revalidatePath("/library")
+        return successResponse("Media removed from collection", { id: collectionId, added: false })
+    } else {
+        await addMediaToCollection([mediaId], [collectionId])
+        revalidatePath("/library")
+        return successResponse("Media added to collection", { id: collectionId, added: true })
+    }
+}
+
+// add media to collection action
+// -------------------------------------------------------------------------------------------------
+export async function addMediaToCollectionAction(_: any, data: FormData) {
+    const validate = z.object({
+        mediaIds: z.array(z.string()),
+        collectionIds: z.array(z.string()),
+    })
+    const result = validate.safeParse({
+        mediaIds: data.get("mediaIds"),
+        collectionIds: data.get("collectionIds"),
+    })
+    if (!result.success) {
+        return errorResponse(400, "Invalid data")
+    }
+
+    // TODO: check if media and collections exist
+
+    const { mediaIds, collectionIds } = result.data
+    await addMediaToCollection(mediaIds, collectionIds)
+    revalidatePath("/library")
+    return successResponse("Media added to collection")
+}
+
+// getCollectionsByMediaId action
+// -------------------------------------------------------------------------------------------------
+export async function getCollectionsByMediaIdAction({ mediaId, limit = 3 }: { mediaId: string, limit?: number }) {
+    const validate = z.object({
+        mediaId: z.string().min(1, "Please enter a media id"),
+        limit: z.number().optional(),
+    })
+    const result = validate.safeParse({
+        mediaId,
+        limit,
+    })
+    if (!result.success) {
+        return errorResponse(400, "Invalid data")
+    }
+    const collections = await getCollectionsByMediaId(result.data.mediaId, limit)
+    if (collections.length === 0) {
+        return errorResponse(404, "Collections not found")
+    }
+    return successResponse("Collections found", collections)
+}
+
+// get recent collections action
+// -------------------------------------------------------------------------------------------------
+export async function getRecentCollectionsAction({ limit = 3 }) {
+    const validate = z.object({
+        limit: z.number(),
+    })
+    const result = validate.safeParse({
+        limit
+    })
+    if (!result.success) {
+        return errorResponse(400, "Invalid data")
+    }
+    const collections = await getRecentCollections({ limit: result.data.limit })
+
+    return successResponse("Collections found", collections)
+}
+
+// search collections action
+// -------------------------------------------------------------------------------------------------
+export async function searchForCollection(_: any, data: FormData) {
+    const validate = z.object({
+        query: z.string().min(3, "Please enter a search query"),
+    })
+    const result = validate.safeParse({
+        query: data.get("query"),
+    })
+    if (!result.success) {
+        return errorResponse(400, "Invalid data")
+    }
+    const collections = await searchCollections(result.data.query)
+    if (collections.length === 0) {
+        return errorResponse(404, "Collections not found")
+    }
+    return successResponse("Collections found", collections)
 }

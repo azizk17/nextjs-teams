@@ -10,6 +10,7 @@ import Image from "next/image";
 import { Media } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { useLibraryStore } from "@/hooks/use-library-store";
+import React from "react";
 
 
 type PostCardProps = {
@@ -64,7 +65,9 @@ export const PostCard = ({ item }: PostCardProps) => {
                             {item.title}
                         </Link>
                     </h2>
-                    <CardActions item={item} />
+                    <React.Suspense fallback={<div>Loading...</div>}>
+                        <CardActions item={item} />
+                    </React.Suspense>
                 </div>
                 {/* <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {item.content?.description}

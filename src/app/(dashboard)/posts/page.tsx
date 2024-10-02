@@ -84,13 +84,18 @@ const Actions = () => (
     </div>
 );
 export default function PostsPage() {
+
+
     return <ContentLayout title="Posts">
 
+
+
         <div className="space-y-6">
-            <Actions />
+            list all posts
+            {/* <Actions />
             <Filters />
             <PostsGrid />
-            <Pagination className="mt-6" />
+            <Pagination className="mt-6" /> */}
         </div>
 
     </ContentLayout>

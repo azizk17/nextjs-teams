@@ -7,6 +7,7 @@ import { PlaylistSelector } from "./_forms";
 
 export const SelectionWrapper = () => {
     const { selectedItems, clearSelection } = useLibraryStore();
+
     // Mock playlists data - replace with actual data fetching logic
     const groups = [
         {

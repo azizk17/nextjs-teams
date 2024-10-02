@@ -24,7 +24,7 @@ Create a form component that uses the schema for validation.
 "use client";
 import { useActionState } from 'react';
 export function ContactForm() {
-    const [state, actions, isPending] = useActionState(contactFormAction)
+    const [state, action, isPending] = useActionState(contactFormAction)
 
     return (
         <form action={action}>

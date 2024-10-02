@@ -1,10 +1,22 @@
 
-import { pgTable, text, timestamp, integer, jsonb, AnyPgColumn, pgEnum } from 'drizzle-orm/pg-core';
+// this should be renamed to postSchema.ts
+
+
+import { pgTable, text, timestamp, integer, jsonb, AnyPgColumn, pgEnum, boolean } from 'drizzle-orm/pg-core';
 import { nanoId } from '@/lib/utils';
 import { platformsTable } from './platformsSchema';
 import { createInsertSchema } from 'drizzle-zod';
 
-const usageRightsEnum = pgEnum('usage_rights', ['public', 'private', 'royalty-free', 'copyrighted', 'custom']);
+export const usageRightsEnum = pgEnum('usage_rights', [
+    'OWNER',
+    'LICENSED',
+    'CREATIVE_COMMONS',
+    'PUBLIC_DOMAIN',
+    'FAIR_USE',
+    'THIRD_PARTY_CONTENT',
+    'CONTENT_ID_MATCHED',
+    'UNSPECIFIED'
+]);
 export const mediaTable = pgTable('media', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     title: text('title').notNull(),
@@ -13,14 +25,15 @@ export const mediaTable = pgTable('media', {
     thumbnailUrl: text('thumbnail_url'),
     type: text('type').notNull(), // e.g. image, video, audio, file
     duration: integer('duration'),
+    summary: text('summary'),
     publishedAt: timestamp('published_at'),
     authorId: text('author_id').references(() => authorsTable.id),
     platformId: text('platform_id').references(() => platformsTable.id),
-    usageRights: usageRightsEnum("usage_rights").default('public'),
+    usageRights: usageRightsEnum("usage_rights").default('UNSPECIFIED'),
     metadata: jsonb('metadata'),
+    isArchived: boolean('is_archived').default(false),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
-
 });
 
 // Subtitles table
@@ -64,9 +77,27 @@ export const collectionsTable = pgTable('collections', {
 
 // Media collections relation table
 export const mediaToCollectionsTable = pgTable('media_to_collections', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     mediaId: text('media_id').notNull().references(() => mediaTable.id),
     collectionId: text('collection_id').notNull().references(() => collectionsTable.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+
+// Topics table
+export const topicsTable = pgTable('topics', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    parentId: text('parent_id').references((): AnyPgColumn => topicsTable.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Media topics relation table
+export const mediaTopicsTable = pgTable('media_topics', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    mediaId: text('media_id').notNull().references(() => mediaTable.id),
+    topicId: text('topic_id').notNull().references(() => topicsTable.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -84,25 +115,6 @@ export const mediaTagsTable = pgTable('media_tags', {
     tagId: text('tag_id').notNull().references(() => tagsTable.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
-
-// Categories table
-export const categoriesTable = pgTable('categories', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    name: text('name').notNull().unique(),
-    description: text('description'),
-    parentId: text('parent_id').references((): AnyPgColumn => categoriesTable.id),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-// Media categories relation table
-export const mediaCategoriesTable = pgTable('media_categories', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    mediaId: text('media_id').notNull().references(() => mediaTable.id),
-    categoryId: text('category_id').notNull().references(() => categoriesTable.id),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
 
 
 // types
@@ -132,11 +144,11 @@ export type MediaTag = typeof mediaTagsTable.$inferSelect;
 export type InsertMediaTag = typeof mediaTagsTable.$inferInsert;
 export const insertMediaTagSchema = createInsertSchema(mediaTagsTable);
 
-export type Category = typeof categoriesTable.$inferSelect;
-export type InsertCategory = typeof categoriesTable.$inferInsert;
-export const insertCategorySchema = createInsertSchema(categoriesTable);
+export type Topic = typeof topicsTable.$inferSelect;
+export type InsertTopic = typeof topicsTable.$inferInsert;
+export const insertTopicSchema = createInsertSchema(topicsTable);
 
-export type MediaCategory = typeof mediaCategoriesTable.$inferSelect;
-export type InsertMediaCategory = typeof mediaCategoriesTable.$inferInsert;
-export const insertMediaCategorySchema = createInsertSchema(mediaCategoriesTable);
+export type MediaTopic = typeof mediaTopicsTable.$inferSelect;
+export type InsertMediaTopic = typeof mediaTopicsTable.$inferInsert;
+export const insertMediaTopicSchema = createInsertSchema(mediaTopicsTable);
 

@@ -3,8 +3,8 @@ import { permissionsTable, rolePermissionsTable, rolesTable, userRolesTable, use
 import { teamMemberRolesTable, teamMembersTable, teamsTable } from './teamSchema';
 import { projectsTable, teamProjectsTable } from './projectSchema';
 import { platformsTable, integrationPlatformsTable, integrationsTable, projectIntegrationsTable, integrationAuthTokensTable } from './platformsSchema';
-import { postsTable, authorTable, postTagsTable, postMediaTable, categoriesTable, collectionsTable, mediaTable, mediaTagsTable, postCategoriesTable, postCollectionsTable, tagsTable } from './postSchema';
-import { authorsTable, mediaAuthorsTable, mediaCategoriesTable, mediaCollectionsTable, mediaToCollectionsTable, subtitlesTable } from './mediaSchema';
+import { authorsTable, topicsTable, collectionsTable, mediaAuthorsTable, mediaTopicsTable, mediaTable, mediaTagsTable, mediaToCollectionsTable, subtitlesTable, tagsTable } from './mediaSchema';
+import { postsTable } from './channelSchema';
 
 
 
@@ -151,7 +151,7 @@ export const integrationAuthTokensRelations = relations(integrationAuthTokensTab
 export const mediaRelations = relations(mediaTable, ({ many, one }) => ({
     collections: many(mediaToCollectionsTable),
     tags: many(mediaTagsTable),
-    categories: many(mediaCategoriesTable),
+    topics: many(mediaTopicsTable),
     author: one(mediaAuthorsTable),
     subtitles: many(subtitlesTable),
 }));
@@ -173,13 +173,13 @@ export const tagRelations = relations(tagsTable, ({ many }) => ({
     media: many(mediaTagsTable),
 }));
 
-export const categoryRelations = relations(categoriesTable, ({ many, one }) => ({
-    media: many(mediaCategoriesTable),
-    parent: one(categoriesTable, {
-        fields: [categoriesTable.parentId],
-        references: [categoriesTable.id],
+export const topicRelations = relations(topicsTable, ({ many, one }) => ({
+    media: many(mediaTopicsTable),
+    parent: one(topicsTable, {
+        fields: [topicsTable.parentId],
+        references: [topicsTable.id],
     }),
-    children: many(categoriesTable),
+    children: many(topicsTable),
 }));
 
 

@@ -12,51 +12,26 @@ import {
 } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk";
 
-type Framework = Record<"value" | "label", string>;
+type MultiSelectItem = {
+    value: string;
+    label: string;
+}
 
-const FRAMEWORKS = [
-    {
-        value: "next.js",
-        label: "Next.js",
-    },
-    {
-        value: "sveltekit",
-        label: "SvelteKit",
-    },
-    {
-        value: "nuxt.js",
-        label: "Nuxt.js",
-    },
-    {
-        value: "remix",
-        label: "Remix",
-    },
-    {
-        value: "astro",
-        label: "Astro",
-    },
-    {
-        value: "wordpress",
-        label: "WordPress",
-    },
-    {
-        value: "express.js",
-        label: "Express.js",
-    },
-    {
-        value: "nest.js",
-        label: "Nest.js",
-    },
-] satisfies Framework[];
 
-export function MultiSelect() {
+type MultiSelectProps = {
+    items: MultiSelectItem[];
+    selected?: MultiSelectItem[];
+    name: string;
+    onSelect: (selected: MultiSelectItem[]) => void;
+    placeholder: string;
+}
+export function MultiSelect({ items, selected, name, onSelect, placeholder }: MultiSelectProps) {
     const inputRef = React.useRef<HTMLInputElement>(null);
     const [open, setOpen] = React.useState(false);
-    const [selected, setSelected] = React.useState<Framework[]>([FRAMEWORKS[1]]);
     const [inputValue, setInputValue] = React.useState("");
 
-    const handleUnselect = React.useCallback((framework: Framework) => {
-        setSelected((prev) => prev.filter((s) => s.value !== framework.value));
+    const handleUnselect = React.useCallback((item: MultiSelectItem) => {
+        onSelect((prev) => prev.filter((s) => s.value !== item.value));
     }, []);
 
     const handleKeyDown = React.useCallback(
@@ -65,7 +40,7 @@ export function MultiSelect() {
             if (input) {
                 if (e.key === "Delete" || e.key === "Backspace") {
                     if (input.value === "") {
-                        setSelected((prev) => {
+                        onSelect((prev) => {
                             const newSelected = [...prev];
                             newSelected.pop();
                             return newSelected;
@@ -81,8 +56,8 @@ export function MultiSelect() {
         []
     );
 
-    const selectables = FRAMEWORKS.filter(
-        (framework) => !selected.includes(framework)
+    const selectables = items.filter(
+        (item) => !selected?.some((s) => s.value === item.value)
     );
 
     console.log(selectables, selected, inputValue);
@@ -94,22 +69,22 @@ export function MultiSelect() {
         >
             <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                 <div className="flex flex-wrap gap-1">
-                    {selected.map((framework) => {
+                    {selected?.map((item) => {
                         return (
-                            <Badge key={framework.value} variant="secondary">
-                                {framework.label}
+                            <Badge key={item.value} variant="secondary">
+                                {item.label}
                                 <button
                                     className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") {
-                                            handleUnselect(framework);
+                                            handleUnselect(item);
                                         }
                                     }}
                                     onMouseDown={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                     }}
-                                    onClick={() => handleUnselect(framework)}
+                                    onClick={() => handleUnselect(item)}
                                 >
                                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                                 </button>
@@ -133,21 +108,21 @@ export function MultiSelect() {
                     {open && selectables.length > 0 ? (
                         <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
                             <CommandGroup className="h-full overflow-auto">
-                                {selectables.map((framework) => {
+                                {items.map((item) => {
                                     return (
                                         <CommandItem
-                                            key={framework.value}
+                                            key={item.value}
                                             onMouseDown={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                             }}
                                             onSelect={(value) => {
                                                 setInputValue("");
-                                                setSelected((prev) => [...prev, framework]);
+                                                onSelect((prev) => [...prev, item]);
                                             }}
                                             className={"cursor-pointer"}
                                         >
-                                            {framework.label}
+                                            {item.label}
                                         </CommandItem>
                                     );
                                 })}

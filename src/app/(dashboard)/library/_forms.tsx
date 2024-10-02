@@ -1,6 +1,6 @@
 "use client"
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Loader2, MoreVertical, PlusIcon, SaveIcon, Trash2, XIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { startTransition, useActionState, useEffect, useState } from "react";
@@ -37,11 +37,20 @@ import {
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox";
 import { createCollectionAction } from "./_actions";
+import { AddToCollection } from "@/components/add-to-collection";
 
 
 export function CardActions({ item }: { item: Media }) {
     const [open, setOpen] = useState(false);
     const [deleteState, deleteAction, deleteIsPending] = useActionState(deleteMediaAction, null)
+
+
+    // recent collections
+    // search collections
+    // create collection
+    // toggle collection
+    // get collections by media id
+
 
     useEffect(() => {
         if (deleteState?.success) {
@@ -53,6 +62,8 @@ export function CardActions({ item }: { item: Media }) {
         }
     }, [deleteState])
 
+    const labels = ['Personal', 'Work', 'Important', 'Optional']
+    const [label, setLabel] = useState<string | null>(null)
     return (
         <div>
             <DropdownMenu>
@@ -63,6 +74,18 @@ export function CardActions({ item }: { item: Media }) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <PlusIcon className="w-4 h-4 mr-2" />
+                            Add to collection
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="p-0">
+                            <AddToCollection itemId={item.id} />
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                    {/* <AddToCollection itemId={item.id} /> */}
+
                     <DropdownMenuItem>Edit</DropdownMenuItem>
                     <DropdownMenuItem>Share</DropdownMenuItem>
                     <DropdownMenuItem
@@ -359,3 +382,4 @@ export function ImportVideoDialog() {
         </Dialog>
     );
 }
+

@@ -20,6 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CommandGroup, CommandInput, CommandItem, CommandEmpty, CommandList } from "@/components/ui/command"
 import { CaretSortIcon } from "@radix-ui/react-icons"
 import { MultiSelect } from "@/components/multi-select"
+import { ToggleCheckbox } from "@/components/toggle-checkbox"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ToggleRadioGroup } from "@/components/toggle-radio-group"
 type FilterFormProps = {
 };
 // Helper function to build query string
@@ -98,6 +101,7 @@ export function FilterForm({ }: FilterFormProps) {
     };
 
     const hasFilters = Object.values(initialFilters).some(value => value !== undefined);
+
     const platforms = [
         { name: "Twitter", value: "twitter" },
         { name: "YouTube", value: "youtube" },
@@ -138,6 +142,11 @@ export function FilterForm({ }: FilterFormProps) {
         // Add more languages as needed
     ];
 
+    const sortOptions = [
+        { label: "Popularity", value: "popularity" },
+        { label: "Published Date", value: "publishedAt" },
+        { label: "Title", value: "title" },
+    ];
     return (
         <Sheet>
             <SheetTrigger>
@@ -166,11 +175,16 @@ export function FilterForm({ }: FilterFormProps) {
                         <label className="text-sm font-medium">Platforms</label>
                         <div className="flex flex-wrap gap-2">
                             {platforms.map((platform) => (
-                                <PlatformCheckbox
+                                <ToggleCheckbox
                                     key={platform.value}
-                                    platform={platform}
-                                    initialFilters={initialFilters}
-                                />
+                                    id={`platform-${platform.value}`}
+                                    name="platform"
+                                    value={platform.value}
+                                    defaultChecked={initialFilters.platforms?.includes(platform.value)}
+                                >
+                                    <Icon name={platform.value} className="w-4 h-4" />
+                                    <span>{platform.name}</span>
+                                </ToggleCheckbox>
                             ))}
                         </div>
                     </div>
@@ -188,10 +202,15 @@ export function FilterForm({ }: FilterFormProps) {
                     </div>
                     <div className="space-y-2">
                         <Label>Language</Label>
-                        <MultiSelect />
+                        <MultiSelect items={languages}
+                            selected={initialFilters?.languages}
+                            name="languages"
+                            onSelect={setSelectedLanguages}
+                            placeholder="Select languages"
+                        />
                     </div>
                     <div className="space-y-2">
-                        <Label>Minimum Popularity</Label>
+                        <Label>Popularity</Label>
                         <Slider
                             name="popularity"
                             defaultValue={[initialFilters.popularity || 0]}
@@ -199,6 +218,11 @@ export function FilterForm({ }: FilterFormProps) {
                             step={1}
                             className="w-full"
                         />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Sort by</Label>
+                        <ToggleRadioGroup options={sortOptions} name="sort" />
+
                     </div>
                     <Button type="submit" className="w-full">Apply Filters</Button>
                 </form>
