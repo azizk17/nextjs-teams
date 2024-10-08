@@ -1,6 +1,6 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
 import db from '@/db';
-import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable, invitationsTable, teamInvitationsTable, InsertTeamInvitation, InsertTeam } from '@/db/schema';
+import { teamsTable, teamMembersTable, teamProjectsTable, usersTable, projectsTable, rolesTable, teamMemberRolesTable, teamInvitationsTable, insertTeamInvitationSchema, insertTeamSchema, NewTeam, NewTeamInvitation } from '@/db/schema';
 import { NotFoundError, ConflictError } from '@/lib/errors';
 
 export async function getTeam(id: string) {
@@ -13,7 +13,7 @@ export async function createTeam(data: { name: string; avatar?: string; descript
     return team;
 }
 
-export async function updateTeam(id: string, data: Partial<InsertTeam>) {
+export async function updateTeam(id: string, data: Partial<NewTeam>) {
     const [updatedTeam] = await db.update(teamsTable).set(data).where(eq(teamsTable.id, id)).returning();
     if (!updatedTeam) throw new NotFoundError('Team not found');
     return updatedTeam;
@@ -193,7 +193,7 @@ export async function getMembersByProjectId(projectId: string) {
         .where(eq(teamProjectsTable.projectId, projectId));
 }
 
-export async function createTeamInvitation(data: InsertTeamInvitation) {
+export async function createTeamInvitation(data: NewTeamInvitation) {
     const [invitation] = await db.insert(teamInvitationsTable)
         .values(data)
         .returning();
@@ -201,27 +201,27 @@ export async function createTeamInvitation(data: InsertTeamInvitation) {
 }
 
 export async function getTeamInvitations(teamId: string) {
-    return db.select().from(invitationsTable).where(eq(invitationsTable.teamId, teamId));
+    return db.select().from(teamInvitationsTable).where(eq(teamInvitationsTable.teamId, teamId));
 }
 
 export async function getTeamInvitationByToken(token: string) {
-    const [invitation] = await db.select().from(invitationsTable).where(eq(invitationsTable.token, token));
+    const [invitation] = await db.select().from(teamInvitationsTable).where(eq(teamInvitationsTable.token, token));
     return invitation;
 }
 
 export async function updateTeamInvitationStatus(token: string, status: string) {
-    const [invitation] = await db.update(invitationsTable).set({ status }).where(eq(invitationsTable.token, token)).returning();
+    const [invitation] = await db.update(teamInvitationsTable).set({ status }).where(eq(teamInvitationsTable.token, token)).returning();
 
     return invitation;
 }
 
 export async function deleteTeamInvitation(token: string) {
-    const [invitation] = await db.delete(invitationsTable).where(eq(invitationsTable.token, token)).returning();
+    const [invitation] = await db.delete(teamInvitationsTable).where(eq(teamInvitationsTable.token, token)).returning();
     return invitation;
 }
 
 export async function getTeamInvitationByEmail(email: string) {
-    const [invitation] = await db.select().from(invitationsTable).where(eq(invitationsTable.inviteeEmail, email));
+    const [invitation] = await db.select().from(teamInvitationsTable).where(eq(teamInvitationsTable.inviteeEmail, email));
 
     return invitation;
 }

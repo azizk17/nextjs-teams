@@ -31,7 +31,7 @@ export const PostCard = ({ item }: PostCardProps) => {
     const isSelected = selectedItems.includes(item.id);
 
     return (
-        <div className={`border bg-background rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isSelected ? 'ring ring-offset-2 ring-green-500 ' : ''}`}>
+        <div className={`relative border  bg-background rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isSelected ? 'ring-4 ring-offset-0 ring-primary/80 ' : ''}`}>
             <div className="absolute top-2 left-2 z-10">
                 <Button
                     variant="ghost"
@@ -60,8 +60,8 @@ export const PostCard = ({ item }: PostCardProps) => {
             </div>
             <div className="p-2">
                 <div className="flex justify-between items-start mb-2">
-                    <h2 className="font-semibold text-primary line-clamp-2 flex-1 mr-2">
-                        <Link href={`/library/${item.id}`} className="hover:text-primary/70">
+                    <h2 className="font-semibold line-clamp-2 flex-1 mr-2">
+                        <Link href={`/library/${item.id}`} className="hover:text-muted-foreground">
                             {item.title}
                         </Link>
                     </h2>

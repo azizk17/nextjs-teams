@@ -7,11 +7,11 @@ import {
     collectionsTable,
     tagsTable,
     mediaTagsTable,
-    categoriesTable,
-    mediaCategoriesTable,
     InsertMedia,
     InsertCollection,
-    mediaToCollectionsTable
+    mediaToCollectionsTable,
+    topicsTable,
+    mediaTopicsTable
 } from '@/db/schema/mediaSchema';
 import { Pagination } from '@/types';
 import { platformsTable } from '@/db/schema';
@@ -59,17 +59,15 @@ export const updateMedia = async (id: string, media: InsertMedia) => {
 // -------------------------------------------------------------------------------------------------
 export const deleteMedia = async (id: string) => {
     // First, delete related records in the media_categories table
-    await db.delete(mediaCategoriesTable).where(eq(mediaCategoriesTable.mediaId, id));
+    await db.delete(mediaTopicsTable).where(eq(mediaTopicsTable.mediaId, id));
     // Use a transaction to ensure atomicity of the delete operations
     return await db.transaction(async (trx) => {
         // Delete related records in the media_categories table
-        await trx.delete(mediaCategoriesTable).where(eq(mediaCategoriesTable.mediaId, id));
+        await trx.delete(mediaTopicsTable).where(eq(mediaTopicsTable.mediaId, id));
         // Delete related records in the media_tags table
         await trx.delete(mediaTagsTable).where(eq(mediaTagsTable.mediaId, id));
-
         // Delete the media record
         const deletedMedia = await trx.delete(mediaTable).where(eq(mediaTable.id, id)).returning();
-
         return deletedMedia;
     });
 
@@ -121,6 +119,7 @@ export const getAllMedia = async (pagination: Pagination) => {
         createdAt: mediaTable.createdAt,
         updatedAt: mediaTable.updatedAt,
         publishedAt: mediaTable.publishedAt,
+        type: mediaTable.type,
         platform: {
             id: mediaTable.platformId,
             name: platformsTable.name,
@@ -185,12 +184,12 @@ export const getMediaInCategory = (categoryId: string) => {
     return db
         .select({
             media: mediaTable,
-            category: categoriesTable,
+            topic: topicsTable,
         })
         .from(mediaTable)
-        .innerJoin(mediaCategoriesTable, eq(mediaTable.id, mediaCategoriesTable.mediaId))
-        .innerJoin(categoriesTable, eq(mediaCategoriesTable.categoryId, categoriesTable.id))
-        .where(eq(categoriesTable.id, categoryId));
+        .innerJoin(mediaTopicsTable, eq(mediaTable.id, mediaTopicsTable.mediaId))
+        .innerJoin(topicsTable, eq(mediaTopicsTable.topicId, topicsTable.id))
+        .where(eq(topicsTable.id, categoryId));
 };
 
 // Get media items with all related data
@@ -201,7 +200,7 @@ export const getMediaWithAllRelations = () => {
             author: authorsTable,
             collection: collectionsTable,
             tag: tagsTable,
-            category: categoriesTable,
+            topic: topicsTable,
         })
         .from(mediaTable)
         .leftJoin(mediaAuthorsTable, eq(mediaTable.id, mediaAuthorsTable.mediaId))
@@ -210,8 +209,8 @@ export const getMediaWithAllRelations = () => {
         .leftJoin(collectionsTable, eq(mediaToCollectionsTable.collectionId, collectionsTable.id))
         .leftJoin(mediaTagsTable, eq(mediaTable.id, mediaTagsTable.mediaId))
         .leftJoin(tagsTable, eq(mediaTagsTable.tagId, tagsTable.id))
-        .leftJoin(mediaCategoriesTable, eq(mediaTable.id, mediaCategoriesTable.mediaId))
-        .leftJoin(categoriesTable, eq(mediaCategoriesTable.categoryId, categoriesTable.id));
+        .leftJoin(mediaTopicsTable, eq(mediaTable.id, mediaTopicsTable.mediaId))
+        .leftJoin(topicsTable, eq(mediaTopicsTable.topicId, topicsTable.id));
 };
 
 

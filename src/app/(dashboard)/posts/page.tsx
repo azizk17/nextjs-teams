@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination } from "@/components/ui/pagination";
 import { FaFacebook, FaTwitter, FaInstagram } from "react-icons/fa";
 import Image from "next/image";
+import { DataTable } from "./data-table";
 
 
 
@@ -92,6 +93,7 @@ export default function PostsPage() {
 
         <div className="space-y-6">
             list all posts
+            <DataTable />
             {/* <Actions />
             <Filters />
             <PostsGrid />

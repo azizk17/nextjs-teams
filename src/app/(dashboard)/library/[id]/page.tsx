@@ -3,7 +3,7 @@ import { getMedia } from "@/services/mediaService";
 import VideoPlayer from "@/components/video-player";
 import RelatedVideosList from "./related-videos-list";
 import VideoInfo from "./video-info";
-import CommentSection from "./comment-section";
+import TranscriptTabs from "./transcript-tabs";
 import { VideoActions } from "./video-actions";
 
 export default async function LibraryItemPage({ params }: { params: { id: string } }) {
@@ -45,7 +45,7 @@ export default async function LibraryItemPage({ params }: { params: { id: string
                     <VideoPlayer options={videoJsOptions} className="video-player" />
                     <VideoActions video={video} />
                     <VideoInfo video={video} />
-                    <CommentSection videoId={id} />
+                    <TranscriptTabs videoId={id} />
                 </div>
                 <div className="lg:w-1/3">
                     <RelatedVideosList videos={relatedVideos} />

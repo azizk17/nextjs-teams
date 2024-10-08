@@ -1,5 +1,5 @@
 "use client"
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
@@ -16,14 +16,26 @@ export type ToggleRadioGroupProps = {
     defaultValue?: string;
     onChange?: (value: string) => void;
     className?: string;
+    allowToggle?: boolean;
 }
 
-export function ToggleRadioGroup({ name, options, defaultValue, onChange, className }: ToggleRadioGroupProps) {
+export function ToggleRadioGroup({ name, options, defaultValue, onChange, className, allowToggle = false }: ToggleRadioGroupProps) {
+    const [selectedValue, setSelectedValue] = useState<string | null>(defaultValue ?? null);
+
+    const handleToggle = (value: string) => {
+        if (allowToggle) {
+            setSelectedValue(prevValue => prevValue === value ? null : value);
+        } else {
+            setSelectedValue(value);
+        }
+
+        onChange?.(value);
+    };
+
     return (
         <RadioGroup
             name={name}
-            defaultValue={defaultValue}
-            onValueChange={onChange}
+            value={selectedValue ?? ""}
             className={cn("flex flex-wrap gap-2", className)}
         >
             {options.map((option) => (
@@ -32,6 +44,7 @@ export function ToggleRadioGroup({ name, options, defaultValue, onChange, classN
                         id={option.value}
                         value={option.value}
                         className="peer sr-only"
+                        onClick={() => handleToggle(option.value)}
                     />
                     <Label
                         htmlFor={option.value}
@@ -40,7 +53,7 @@ export function ToggleRadioGroup({ name, options, defaultValue, onChange, classN
                             "transition-colors duration-200 ease-in-out",
                             "hover:bg-accent hover:text-accent-foreground",
                             "peer-data-[state=unchecked]:border-muted peer-data-[state=unchecked]:bg-popover peer-data-[state=unchecked]:text-muted-foreground",
-                            "peer-data-[state=checked]:border-secondary peer-data-[state=checked]:bg-secondary peer-data-[state=checked]:text-secondary-foreground"
+                            "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-secondary"
                         )}
                     >
                         {option.label}

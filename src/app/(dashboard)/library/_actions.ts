@@ -103,13 +103,49 @@ export async function deleteMediaAction(_: any, id: string) {
     return successResponse("Media deleted")
 }
 
+// create post action
+// -------------------------------------------------------------------------------------------------
+const createPostSchema = z.object({
+    title: z.string().min(1, "Please enter a title"),
+    description: z.string().min(1, "Please enter a description"),
+    tags: z.array(z.string()).min(1, "Please enter at least one tag"),
+    thumbnail: z.string().min(1, "Please enter a thumbnail"),
+});
+export async function createPostAction(prevState: any, formData: FormData) {
+    const validatedFields = createPostSchema.safeParse({
+        title: formData.get("title"),
+        description: formData.get("description"),
+        tags: formData.get("tags"),
+        thumbnail: formData.get("thumbnail"),
+    });
+
+    if (!validatedFields.success) {
+        return { error: "Invalid input. Please check the URL." };
+    }
+
+    const { title, description, tags, thumbnail } = validatedFields.data;
+
+    try {
+        // TODO: Implement the actual import logic here
+        // This is where you'd use yt-dlp or other tools to process the URL
+        console.log("Importing video:", { title });
+
+        // Simulating an async operation
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        return { success: true };
+    } catch (error) {
+        return { error: "Failed to import video. Please try again." };
+    }
+}
+
 // Import video action
 // -------------------------------------------------------------------------------------------------
 const importFormSchema = z.object({
     url: z.string().url("Please enter a valid URL"),
     title: z.string().optional(),
 });
-export async function importVideoAction(prevState: any, formData: FormData) {
+export async function importPostAction(prevState: any, formData: FormData) {
     const validatedFields = importFormSchema.safeParse({
         url: formData.get("url"),
         title: formData.get("title"),

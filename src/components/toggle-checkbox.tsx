@@ -13,6 +13,7 @@ export type ToggleCheckboxProps = {
     className?: string;
 }
 export function ToggleCheckbox({ id, name, value, defaultChecked, onChange, children, className }: ToggleCheckboxProps) {
+
     return (
         <div className={cn("flex items-center", className)}>
             <Checkbox
@@ -30,7 +31,7 @@ export function ToggleCheckbox({ id, name, value, defaultChecked, onChange, chil
                     "transition-colors duration-200 ease-in-out",
                     "hover:bg-accent hover:text-accent-foreground",
                     "peer-data-[state=unchecked]:border-muted peer-data-[state=unchecked]:bg-popover peer-data-[state=unchecked]:text-muted-foreground",
-                    "peer-data-[state=checked]:border-secondary peer-data-[state=checked]:bg-secondary peer-data-[state=checked]:text-secondary-foreground"
+                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-secondary"
                 )}
             >
                 {children}

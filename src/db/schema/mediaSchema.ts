@@ -7,6 +7,8 @@ import { nanoId } from '@/lib/utils';
 import { platformsTable } from './platformsSchema';
 import { createInsertSchema } from 'drizzle-zod';
 
+
+// you need versioning, cleaning, and moderation
 export const usageRightsEnum = pgEnum('usage_rights', [
     'OWNER',
     'LICENSED',
@@ -25,7 +27,6 @@ export const mediaTable = pgTable('media', {
     thumbnailUrl: text('thumbnail_url'),
     type: text('type').notNull(), // e.g. image, video, audio, file
     duration: integer('duration'),
-    summary: text('summary'),
     publishedAt: timestamp('published_at'),
     authorId: text('author_id').references(() => authorsTable.id),
     platformId: text('platform_id').references(() => platformsTable.id),
@@ -43,6 +44,24 @@ export const subtitlesTable = pgTable('subtitles', {
     language: text('language').notNull(),
     url: text('url').notNull(),
     format: text('format').notNull(), // e.g., 'srt', 'vtt', 'ass'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Transcript table
+export const transcriptTable = pgTable('transcript', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    mediaId: text('media_id').notNull().references(() => mediaTable.id),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Summary table
+export const summaryTable = pgTable('summary', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    mediaId: text('media_id').notNull().references(() => mediaTable.id),
+    text: text('text').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
