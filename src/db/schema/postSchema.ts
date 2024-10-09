@@ -1,24 +1,64 @@
 import { pgTable, text, timestamp, primaryKey, integer, boolean, unique, json, serial, pgEnum, jsonb, AnyPgTable, AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { nanoId } from '@/lib/utils';
-import { usersTable } from './userSchema';
-import { relations } from 'drizzle-orm';
 import { platformsTable } from './platformsSchema';
 
 // Posts table
-const postTypeEnum = pgEnum('post_type', ['post', 'video', 'audio', 'image', 'file']);
 export const postsTable = pgTable('posts', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    title: text('title').notNull(),
+    externalId: text('external_id'),
     content: jsonb('content').notNull(),
-    type: postTypeEnum('type').$default(() => 'post'),
     metadata: jsonb('metadata'),
+    publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
     authorId: text('author_id').references(() => authorTable.id),
     platformId: text('platform_id').references(() => platformsTable.id),
     // user_id
     // userId: text('user_id').references(() => usersTable.id),
+});
+
+
+
+
+// media table
+const mediaTypeEnum = pgEnum('media_type', ['image', 'video', 'audio', 'file']);
+const usageRightsEnum = pgEnum('usage_rights', ['public', 'private', 'royalty-free', 'copyrighted', 'custom']);
+export const mediaTable = pgTable('media', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    url: text('url').notNull(),
+    title: text('title'),
+    description: text('description'),
+    size: integer('size'),
+    width: integer('width'),
+    height: integer('height'),
+    duration: integer('duration'),
+    mimeType: text('mime_type'),
+    fileType: text('file_type'),
+    fileExtension: text('file_extension'),
+    type: mediaTypeEnum('type'),
+    usageRights: usageRightsEnum("usage_rights").default('public'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// post media table
+export const postMediaTable = pgTable('post_media', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    postId: text('post_id').references(() => postsTable.id),
+    mediaId: text('media_id').references(() => mediaTable.id),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+// author table
+export const authorTable = pgTable('author', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 
@@ -41,42 +81,6 @@ export const postCollectionsTable = pgTable('post_collections', {
     updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-// media table
-const mediaTypeEnum = pgEnum('media_type', ['image', 'video', 'audio', 'file']);
-export const mediaTable = pgTable('media', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    url: text('url').notNull(),
-    title: text('title'),
-    description: text('description'),
-    size: integer('size'),
-    width: integer('width'),
-    height: integer('height'),
-    duration: integer('duration'),
-    mimeType: text('mime_type'),
-    fileType: text('file_type'),
-    fileExtension: text('file_extension'),
-    type: mediaTypeEnum('type'),
-    metadata: jsonb('metadata'),
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// post media table
-export const postMediaTable = pgTable('post_media', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    postId: text('post_id').references(() => postsTable.id),
-    mediaId: text('media_id').references(() => mediaTable.id),
-    createdAt: timestamp('created_at').defaultNow(),
-});
-
-// author table
-export const authorTable = pgTable('author', {
-    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
-    name: text('name').notNull(),
-    email: text('email').notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
-});
 
 
 // tags table
