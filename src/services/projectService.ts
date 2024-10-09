@@ -7,7 +7,7 @@
  */
 
 import db from "@/db";
-import { InsertProject, projectsTable } from "@/db/schema";
+import { NewProject, projectsTable } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function getProjectsByUserId(userId: string) {
@@ -49,7 +49,7 @@ export async function getProjectById(id: string) {
     return project;
 }
 
-export async function createProject(project: InsertProject) {
+export async function createProject(project: NewProject) {
     return db.insert(projectsTable).values(project).returning();
 }
 

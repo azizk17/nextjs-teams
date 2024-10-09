@@ -1,0 +1,1 @@
+ALTER TABLE "media_to_collections" DROP COLUMN IF EXISTS "id";

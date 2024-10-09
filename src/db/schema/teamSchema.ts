@@ -54,7 +54,7 @@ export const teamInvitationsTable = pgTable('team_invitations', {
 
 export type Team = typeof teamsTable.$inferSelect;
 export type NewTeam = typeof teamsTable.$inferInsert;
-export const teamSchema = createInsertSchema(teamsTable);
+export const insertTeamSchema = createInsertSchema(teamsTable);
 
 export type TeamMember = typeof teamMembersTable.$inferSelect;
 export type NewTeamMember = typeof teamMembersTable.$inferInsert;

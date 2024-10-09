@@ -3,10 +3,11 @@
 import { useLibraryStore } from "@/hooks/use-library-store";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { PlaylistSelector } from "./_forms";
+import { PlaylistSelector } from "./_components/list-selector";
 
 export const SelectionWrapper = () => {
     const { selectedItems, clearSelection } = useLibraryStore();
+
     // Mock playlists data - replace with actual data fetching logic
     const groups = [
         {
@@ -47,8 +48,8 @@ export const SelectionWrapper = () => {
                     onPlaylistSelect={() => { }}
                     onCreatePlaylist={() => { }}
                 />
-                <Button variant="outline" size="sm">Share</Button>
                 <Button variant="outline" size="sm">Download</Button>
+                <Button variant="outline" size="sm">Archive</Button>
                 <Button variant="outline" size="sm" className="text-destructive">Delete</Button>
             </div>
         </div>

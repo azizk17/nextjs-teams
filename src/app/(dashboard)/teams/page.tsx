@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     description: 'View your teams',
 }
 
+
 export default async function Page() {
     const { user } = await auth()
     const teams = await getTeamsByUserId(user.id);

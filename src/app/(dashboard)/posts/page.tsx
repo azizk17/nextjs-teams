@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination } from "@/components/ui/pagination";
 import { FaFacebook, FaTwitter, FaInstagram } from "react-icons/fa";
 import Image from "next/image";
+import { DataTable } from "./data-table";
 
 
 
@@ -84,13 +85,19 @@ const Actions = () => (
     </div>
 );
 export default function PostsPage() {
+
+
     return <ContentLayout title="Posts">
 
+
+
         <div className="space-y-6">
-            <Actions />
+            list all posts
+            <DataTable />
+            {/* <Actions />
             <Filters />
             <PostsGrid />
-            <Pagination className="mt-6" />
+            <Pagination className="mt-6" /> */}
         </div>
 
     </ContentLayout>

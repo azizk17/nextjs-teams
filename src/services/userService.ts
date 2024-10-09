@@ -1,5 +1,10 @@
 import db from "@/db";
-import { InsertToken, InsertUser, Permission, permissionsTable, Role, rolePermissionsTable, rolesTable, Token, tokensTable, User, userRolesTable, usersTable } from "@/db/schema";
+import {
+    NewToken,
+    NewUser,
+    Permission, permissionsTable, Role, rolePermissionsTable, rolesTable,
+    Token, tokensTable, User, userRolesTable, usersTable
+} from "@/db/schema";
 import { addHours } from "date-fns";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import _ from "lodash";
@@ -65,7 +70,7 @@ export async function createUser(data: InsertUser) {
  * @param {string} data.password - The new password of the user.
  * @returns {Promise<User>} A promise that resolves to the updated user.
  */
-export async function updateUser(id: string, data: Partial<InsertUser>) {
+export async function updateUser(id: string, data: Partial<NewUser>) {
     const [user] = await db.update(usersTable).set(data).where(eq(usersTable.id, id)).returning();
     return user;
 }
@@ -252,7 +257,7 @@ export async function getLastTokenByUserIdAndType(userId: string, type: "email_v
  * @param {Date} data.expiresAt - The expiration date of the token.
  * @returns {Promise<any>} A promise that resolves to the created token.
  */
-export async function createToken(data: InsertToken) {
+export async function createToken(data: NewToken) {
     const [token] = await db.insert(tokensTable).values(data).returning();
     return token;
 }

@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from '@/types';
-import { CreateTeamSchema, Team } from '@/db/schema';
+import { insertTeamSchema, Team } from '@/db/schema';
 import { addMemberToTeam, createTeam, createTeamInvitation, deleteTeam, getTeam, updateTeam, getTeamInvitation, getTeamMember, deleteTeamInvitation, isTeamMember, canAccessTeam, isTeamMemberOrOwner } from '@/services/teamService';
 import { redirect } from 'next/navigation';
 import { auth } from '@/services/auth';
@@ -50,13 +50,15 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
 
     let team: Team | null = null;
     try {
-        const validated = CreateTeamSchema.omit({ id: true }).parse({
+        const validated = insertTeamSchema.omit({ id: true }).parse({
             name: formData.get("name"),
             description: formData.get("description"),
             ownerId: user.id,
             // avatar: formData.get("avatar"),
             avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${formData.get("name")}`,
         });
+
+        console.log("Creating team --- -------:", validated);
         team = await createTeam({
             name: validated.name,
             avatar: validated.avatar || undefined,
@@ -64,7 +66,7 @@ export async function createTeamAction(prevState: any, formData: FormData): Prom
             ownerId: validated.ownerId,
         });
     } catch (error) {
-        return noRes(error);
+        return errorResponse(500, "Failed to create team", { details: error instanceof Error ? error.message : "Unknown error" });
     }
 
     redirect(`/teams/${team?.id}`);

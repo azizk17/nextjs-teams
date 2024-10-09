@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { db } from '../index';
-import { mediaTable, authorsTable, tagsTable, categoriesTable, mediaTagsTable, mediaCategoriesTable } from '../schema/mediaSchema';
+import { mediaTable, authorsTable, tagsTable, categoriesTable, mediaTagsTable, mediaCategoriesTable, collectionsTable } from '../schema/mediaSchema';
 import { platformsTable } from '../schema/platformsSchema';
 
 const MEDIA_COUNT = 50;
@@ -99,6 +99,18 @@ export async function seed() {
                 }))
             );
     }
+
+    const COLLECTION_COUNT = 20;
+    // Seed collections
+    const collectionIds = await db.insert(collectionsTable)
+        .values(
+            Array.from({ length: COLLECTION_COUNT }, () => ({
+                name: faker.lorem.sentence(),
+                description: faker.lorem.paragraph(),
+            }))
+        )
+        .returning({ id: collectionsTable.id });
+
 
     console.log('Media seed completed successfully');
 }

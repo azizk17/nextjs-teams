@@ -15,3 +15,21 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     })),
     clearSelection: () => set({ selectedItems: [] })
 }))
+
+
+type ViewMode = 'grid' | 'list';
+
+type LibraryViewStore = {
+    viewMode: ViewMode;
+    toggleViewMode: () => void;
+    setViewMode: (mode: ViewMode) => void;
+}
+
+export const useLibraryViewStore = create<LibraryViewStore>((set) => ({
+    viewMode: 'grid',
+    toggleViewMode: () => set((state) => ({
+        viewMode: state.viewMode === 'grid' ? 'list' : 'grid'
+    })),
+    setViewMode: (mode) => set({ viewMode: mode })
+}))
+
