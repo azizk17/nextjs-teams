@@ -7,6 +7,33 @@ import { nanoId } from '@/lib/utils';
 import { platformsTable } from './platformsSchema';
 import { createInsertSchema } from 'drizzle-zod';
 
+const post = {
+    id: "11",
+    content: {
+        text: "Hello World",
+        images: ["image1", "image2"],
+    },
+    author: {
+        id: "123",
+        name: "John Doe",
+    },
+    platform: {
+        id: "youtube",
+        name: "YouTube",
+    },
+}
+
+
+export const postsTable = pgTable('posts', {
+    id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
+    content: text('content').notNull(),
+    thumbnailUrl: text('thumbnail_url'),
+    type: text('type').notNull(), // e.g. image, video, audio, file
+    publishedAt: timestamp('published_at'),
+    authorId: text('author_id').references(() => authorsTable.id),
+    platformId: text('platform_id').references(() => platformsTable.id),
+});
+
 
 // you need versioning, cleaning, and moderation
 export const usageRightsEnum = pgEnum('usage_rights', [
