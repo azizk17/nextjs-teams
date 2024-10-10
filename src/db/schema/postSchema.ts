@@ -48,7 +48,7 @@ export const postMediaTable = pgTable('post_media', {
     id: text('id').primaryKey().$defaultFn(() => nanoId(10)),
     postId: text('post_id').references(() => postsTable.id),
     mediaId: text('media_id').references(() => mediaTable.id),
-    metadata: jsonb('metadata'),
+    metadata: jsonb('metadata'), // background_music, background_video, thumbnail, etc
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -151,6 +151,20 @@ export type NewTag = typeof tagsTable.$inferInsert;
 
 export type Category = typeof categoriesTable.$inferSelect;
 export type NewCategory = typeof categoriesTable.$inferInsert;
+
+export type Media = typeof mediaTable.$inferSelect;
+export type NewMedia = typeof mediaTable.$inferInsert;
+
+export type PostTag = typeof postTagsTable.$inferSelect;
+export type NewPostTag = typeof postTagsTable.$inferInsert;
+
+export type PostCategory = typeof postCategoriesTable.$inferSelect;
+export type NewPostCategory = typeof postCategoriesTable.$inferInsert;
+
+export type MediaTag = typeof mediaTagsTable.$inferSelect;
+export type NewMediaTag = typeof mediaTagsTable.$inferInsert;
+
+
 
 // Schemas
 export const insertPostSchema = createInsertSchema(postsTable);

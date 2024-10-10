@@ -5,6 +5,7 @@ import { projectsTable, teamProjectsTable } from './projectSchema';
 import { platformsTable, integrationPlatformsTable, integrationsTable, projectIntegrationsTable, integrationAuthTokensTable } from './platformsSchema';
 import { authorsTable, topicsTable, collectionsTable, mediaAuthorsTable, mediaTopicsTable, mediaTable, mediaTagsTable, mediaToCollectionsTable, subtitlesTable, tagsTable } from './mediaSchema';
 import { postsTable } from './channelSchema';
+import { categoriesTable, postCategoriesTable, postMediaTable, postTagsTable } from './postSchema';
 
 
 
@@ -146,6 +147,32 @@ export const integrationAuthTokensRelations = relations(integrationAuthTokensTab
         references: [projectIntegrationsTable.id],
     }),
 }));
+
+// Posts Relations
+export const postsRelations = relations(postsTable, ({ many, one }) => ({
+    platform: one(platformsTable),
+    author: one(mediaAuthorsTable),
+    tags: many(postTagsTable),
+    categories: many(postCategoriesTable),
+    media: many(postMediaTable),
+}));
+
+export const postTagsRelations = relations(postTagsTable, ({ one }) => ({
+    post: one(postsTable),
+    tag: one(tagsTable),
+}));
+
+export const postCategoriesRelations = relations(postCategoriesTable, ({ one }) => ({
+    post: one(postsTable),
+    category: one(categoriesTable),
+}));
+
+export const postMediaRelations = relations(postMediaTable, ({ one }) => ({
+    post: one(postsTable),
+    media: one(mediaTable),
+}));
+
+
 
 // Media Relations
 export const mediaRelations = relations(mediaTable, ({ many, one }) => ({

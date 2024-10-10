@@ -43,6 +43,13 @@
       "when": 1727848729569,
       "tag": "0005_brave_eternity",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1728543858184,
+      "tag": "0006_glorious_elektra",
+      "breakpoints": true
     }
   ]
 }

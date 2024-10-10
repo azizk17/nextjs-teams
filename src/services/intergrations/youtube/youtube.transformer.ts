@@ -15,7 +15,7 @@ export function transformYouTubeVideoToMedia(video: YouTubeVideo, channel: YouTu
             likes: parseInt(video.statistics.likeCount),
             comments: parseInt(video.statistics.commentCount),
         },
-        creator: {
+        author: {
             id: channel.id,
             name: channel.title,
             avatarUrl: channel.thumbnails.default.url,
